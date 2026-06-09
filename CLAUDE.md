@@ -92,4 +92,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **Data flow — print**: `handlePrint` reads from current pallet `meta` + `packingList`. `handlePrintPallet` reads from stored pallet `p.meta`. Any new field (e.g. `worker`) must be added to: `initPallet()`, session restore, `packingList` state, `handlePrint`, AND `handlePrintPallet`.
 
-**packingList state**: `{ po:'', del:[], pn:'', coo:[], qty:'', worker:'' }` — `del` and `coo` are arrays (multi-value tag fields), the rest are strings.
+**packingList state**: `{ po:'', del:[], pn:'', coo:[], qty:'', worker:'' }` — `del` and `coo` are arrays (multi-value tag fields), the rest are strings. UI form only shows `qty` and `worker` — the other fields remain in state for per-box validation. Do not re-add them to the packing list form.
+
+**Worker field**: Rendered above the packing list card, outside it.
+
+**Segregation table**: Below the box chips in the left panel. Groups current pallet's boxes by `b.qty` (pieces/box). Uses IIFE pattern in JSX: `{boxes.length>0&&(()=>{ ... })()}`.
+
+**summaryLine**: Still defined as `useMemo` but no longer rendered anywhere — orphaned dead code. Do not re-add its display.
+
+**Flex button clipping**: Buttons inside flex rows that get cut off when the panel narrows need `flexShrink:0, whiteSpace:'nowrap'`.
+
+**Print template branding**: All three templates (`printBubble`, `printList`, `printSummary`) now use `PACKCALC · SEVENUM`. Update all three together if rebranding again.
