@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PackCalc — Pallet Scan Counter</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#07080b;--surface:#0c0e14;--s2:#111520;--s3:#181d29;
+      --border:#1a2030;--border-hi:#26304a;
+      --text:#eef0f7;--sec:#7a8aaa;--muted:#52607c;
+      --amber:#ffb700;--amber-glow:rgba(255,183,0,.15);
+      --green:#00e569;--red:#ff3838;--yellow:#f7c048;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    input,button{font-family:inherit;}
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-track{background:var(--surface);}
+    ::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:2px;}
+
+    @keyframes led-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,105,.3);}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,229,105,0);}}
+    @keyframes bracket-draw{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
+    @keyframes chip-pop{0%{transform:scale(.6);opacity:0;}65%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
+
+    /* Scan zone corners */
+    .scan-zone{position:relative;animation:bracket-draw .25s ease;}
+    .scan-zone::before,.scan-zone::after,.sz-bl,.sz-tr{content:'';position:absolute;width:14px;height:14px;pointer-events:none;}
+    .scan-zone::before{top:-2px;left:-2px;border-top:2px solid var(--amber);border-left:2px solid var(--amber);}
+    .scan-zone::after{top:-2px;right:-2px;border-top:2px solid var(--amber);border-right:2px solid var(--amber);}
+    .sz-bl{bottom:-2px;left:-2px;border-bottom:2px solid var(--amber);border-left:2px solid var(--amber);}
+    .sz-tr{bottom:-2px;right:-2px;border-bottom:2px solid var(--amber);border-right:2px solid var(--amber);}
+
+    /* Inputs */
+    .main-inp{width:100%;padding:9px 44px 9px 14px;background:var(--s2);border:2px solid var(--amber);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;outline:none;min-height:40px;}
+    .main-inp::placeholder{color:var(--muted);font-size:13px;font-weight:400;}
+    .main-inp:focus{box-shadow:0 0 0 3px var(--amber-glow);}
+    .field-inp{width:100%;padding:6px 8px;min-height:32px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;outline:none;}
+    .field-inp::placeholder{font-size:9px;}
+    .field-inp:focus{border-color:var(--amber);}
+
+    /* Box chip — live scan grid */
+    .box-chip{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      width:52px;height:64px;border-radius:7px;border:2px solid;
+      background:var(--s2);cursor:pointer;padding:0;flex-shrink:0;
+      transition:border-color .9s ease,background .9s ease;
+      animation:chip-pop .22s ease;
+    }
+    .box-chip:hover{filter:brightness(1.15);}
+    .box-chip:active{transform:scale(.95);}
+    .box-chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+    /* Step chips */
+    .step-chip{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px;padding:7px 9px;border-radius:8px;border:1.5px solid;}
+
+    /* Buttons */
+    .new-btn{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sec);cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.04em;min-height:38px;}
+    .new-btn:hover{border-color:var(--border-hi);color:var(--text);}
+    .new-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+    .tkt-btn{width:100%;padding:15px 0;border-radius:8px;border:none;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:800;letter-spacing:.08em;display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;}
+    .tkt-btn:enabled{background:var(--amber);color:var(--bg);}
+    .tkt-btn:disabled{background:var(--s3);color:var(--muted);cursor:not-allowed;}
+    .tkt-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+    .ftoggle{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px;cursor:pointer;border:1.5px solid;font-size:12px;font-weight:700;letter-spacing:.04em;min-height:36px;}
+    .ftoggle:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+    .seg-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+    .seg-btn{padding:6px 14px;background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--sec);min-height:36px;}
+    .seg-btn.active{background:var(--amber);color:var(--bg);}
+    .seg-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+    .layout-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px;}
+    .lt-btn{flex:1;padding:7px 0;background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--sec);}
+    .lt-btn.active{background:var(--s3);color:var(--text);}
+    .lt-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+
+    .mixed-warn{display:flex;align-items:center;gap:6px;justify-content:center;font-size:13px;font-weight:600;color:var(--yellow);letter-spacing:.04em;}
+    .mismatch-warn{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,56,56,.3);background:rgba(255,56,56,.06);}
+
+    /* ── Desktop layout ── */
+    html,body,#root{height:100%;overflow:hidden;}
+    body{background:var(--bg);color:var(--text);font-family:'Chakra Petch',system-ui,sans-serif;}
+    .app-root{height:100%;display:flex;flex-direction:column;}
+    .app-body{flex:1;display:flex;flex-direction:row;overflow:hidden;}
+    .panel-left{order:2;flex:1;display:flex;flex-direction:column;overflow:hidden;}
+    .panel-right{order:1;width:22%;min-width:260px;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
+    .panel-scan{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+    /* ── Pallet tab bar ── */
+    .plt-tabs{display:flex;align-items:stretch;overflow-x:auto;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none;}
+    .plt-tabs::-webkit-scrollbar{display:none;}
+    .plt-tab{display:flex;align-items:center;gap:5px;padding:0 11px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--sec);transition:color .15s,border-color .15s;white-space:nowrap;}
+    .plt-tab.active{color:var(--amber);border-bottom-color:var(--amber);}
+    .plt-tab:hover:not(.active){color:var(--text);}
+    .plt-tab-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:9px;background:var(--s3);color:var(--sec);transition:background .15s,color .15s;}
+    .plt-tab.active .plt-tab-badge{background:var(--amber);color:var(--bg);}
+    .plt-tab-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px;margin-left:1px;}
+    .plt-tab-x:hover{color:var(--red);}
+    .plt-add{display:flex;align-items:center;gap:5px;padding:0 13px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--green);}
+    .plt-add:hover{color:var(--text);}
+    .plt-delivery{display:flex;align-items:center;gap:5px;padding:0 14px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;border-left:1px solid var(--border);cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--sec);margin-left:auto;}
+    .plt-delivery.active{color:var(--amber);border-bottom-color:var(--amber);}
+    .plt-delivery:hover:not(.active){color:var(--text);}
+
+    /* ── Delivery view ── */
+    .dlv-row{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:6px;border-radius:8px;border:1px solid var(--border);}
+    .dlv-total-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s3);border-radius:8px;border:1px solid var(--border-hi);}
+    .dlv-status{padding:12px 14px;border-radius:8px;border:1.5px solid;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ── Design tokens ── */
+const C = {
+  bg:'#07080b',surface:'#0c0e14',s2:'#111520',s3:'#181d29',
+  border:'#1a2030',borderHi:'#26304a',
+  text:'#eef0f7',sec:'#7a8aaa',muted:'#52607c',
+  amber:'#ffb700',amberGlow:'rgba(255,183,0,.15)',
+  green:'#00e569',red:'#ff3838',yellow:'#f7c048',
+};
+const PATHS = {
+  check:'M20 6 9 17l-5-5',
+  trash:'M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6',
+  print:'M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z',
+  reset:'M1 4v6h6M3.51 15a9 9 0 1 0 .49-4.34',
+  scan:'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10',
+  warn:'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',
+  sliders:'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+};
+const Svg = ({ name, size=16, color='currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {(PATHS[name]||'').split(/(?=[ML])/).map((seg,i)=><path key={i} d={seg.trim()}/>)}
+  </svg>
+);
+
+/* ── Utilities ── */
+const uid      = () => Math.random().toString(36).slice(2,9);
+const genPltId = () => uid();
+const tsNow    = () => new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const dateStr  = () => new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+
+/* ── Printers ── */
+const PRINTERS = {
+  zt:  { name:'Zebra ZT',     width:'12.8cm', label:'12.8×6.3 cm', type:'thermal' },
+  qln: { name:'Zebra QLn420', width:'11.3cm', label:'11.3×6.3 cm', type:'thermal' },
+  a4:  { name:'A4 Sheet',     width:'170mm',  label:'A4 portrait',  type:'paper'   },
+};
+
+/* ── Auto-fit bubble size by box count ── */
+const bubbleFontSize = (qty, baseFn, cardW) => {
+  const digits = String(qty).length;
+  const maxFit = Math.floor((cardW - 6) / (digits * 0.62));
+  return Math.min(baseFn, maxFit);
+};
+const bubbleSize = (count, isA4) => {
+  if (isA4) {
+    if (count <= 6)  return { w:60, h:76, fn:24, fs:9  };
+    if (count <= 12) return { w:48, h:60, fn:20, fs:8  };
+    if (count <= 20) return { w:38, h:48, fn:16, fs:7  };
+    return                  { w:30, h:38, fn:13, fs:6  };
+  }
+  if (count <= 4)  return { w:40, h:50, fn:15, fs:7   };
+  if (count <= 10) return { w:32, h:40, fn:13, fs:7   };
+  if (count <= 18) return { w:24, h:30, fn:11, fs:6   };
+  return                  { w:18, h:22, fn:9,  fs:5   };
+};
+
+/* ── Shared label CSS ── */
+const labelCSS = (labelW, isA4=false) => {
+  const p = isA4
+    ? { gap:'8px', pad:'16px 20px', hdrPb:'8px', brand:11, pid:11, tag:'3px 9px', tagSz:11, pn:32, pnMix:16, metaGap:'20px', metaPt:'6px', mflbl:9, mfval:15, totGap:'8px', totPt:'6px', totPad:'6px 14px', totLbl:9, totVal:24, ftrPt:'6px', ft:9.5, ok:10, okPad:'3px 10px' }
+    : { gap:'5px', pad:'9px 12px',  hdrPb:'5px', brand:9,  pid:8.5,tag:'2px 7px', tagSz:9,  pn:22, pnMix:13, metaGap:'12px', metaPt:'4px', mflbl:7, mfval:11, totGap:'4px', totPt:'4px', totPad:'3px 7px',  totLbl:7, totVal:16, ftrPt:'4px', ft:7.5, ok:8,  okPad:'2px 7px' };
+  return `
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#f0f0f0;display:flex;flex-direction:column;align-items:center;justify-content:${isA4?'flex-start':'center'};min-height:100vh;font-family:'Inter',sans-serif;gap:14px;padding:${isA4?'30px 20px':'20px'};}
+  .label{width:${labelW};background:#fff;border:1.5px solid #111;padding:${p.pad};display:flex;flex-direction:column;gap:${p.gap};}
+  .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:${p.hdrPb};gap:6px;}
+  .hdr-left{flex:1;min-width:0;}
+  .brand{font-size:${p.brand}px;font-weight:900;letter-spacing:.06em;white-space:nowrap;}
+  .pid{font-family:'JetBrains Mono',monospace;font-size:${p.pid}px;font-weight:800;color:#555;letter-spacing:.04em;}
+  .tag{font-family:'JetBrains Mono',monospace;font-size:${p.tagSz}px;font-weight:900;padding:${p.tag};border-radius:3px;background:#fffbe6;color:#92600a;border:1px solid #f0c040;white-space:nowrap;flex-shrink:0;}
+  .pn{font-family:'JetBrains Mono',monospace;font-size:${p.pn}px;font-weight:900;color:#111;letter-spacing:.02em;}
+  .pn-mixed{font-family:'JetBrains Mono',monospace;font-size:${p.pnMix}px;font-weight:700;color:#aaa;}
+  .meta{display:flex;flex-wrap:wrap;gap:${p.metaGap};border-top:1px solid #ddd;padding-top:${p.metaPt};}
+  .mf .lbl{font-size:${p.mflbl}px;font-weight:700;letter-spacing:.1em;color:#888;}
+  .mf .val{font-family:'JetBrains Mono',monospace;font-size:${p.mfval}px;font-weight:800;color:#111;}
+  .totals{display:grid;grid-template-columns:1fr 1fr;gap:${p.totGap};border-top:1px solid #ddd;padding-top:${p.totPt};}
+  .tot-block{background:#f7f7f7;border-radius:3px;padding:${p.totPad};}
+  .tot-lbl{font-size:${p.totLbl}px;font-weight:700;letter-spacing:.1em;color:#888;}
+  .tot-val{font-family:'JetBrains Mono',monospace;font-size:${p.totVal}px;font-weight:900;color:#111;}
+  .ftr{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #ddd;padding-top:${p.ftrPt};}
+  .ft{font-size:${p.ft}px;color:#999;}
+  .ok{padding:${p.okPad};border-radius:3px;font-size:${p.ok}px;font-weight:800;background:#14532d;color:#22c55e;white-space:nowrap;}
+  .warn-badge{padding:${p.okPad};border-radius:3px;font-size:${p.ok}px;font-weight:800;background:#7c1c1c;color:#f87171;white-space:nowrap;}
+  .btn{padding:9px 24px;border:none;border-radius:6px;background:#ffb700;color:#07080b;font-weight:800;font-size:13px;cursor:pointer;}
+  @media print{body{background:#fff;}button{display:none!important;}}
+  `;
+};
+
+/* ── QR encode ── */
+const encodePallet = (pallet) => JSON.stringify({
+  v:1, id:pallet.id,
+  m:{ pn:pallet.meta.pn||'', coo:pallet.meta.coo||'', po:pallet.meta.po||'', ref:pallet.meta.ref||'' },
+  b: pallet.boxes.map(b=>({ i:b.id, pn:b.pn||'', coo:b.coo||'', po:b.po||'', del:b.del||'', q:b.qty })),
+});
+const genQR = async (data) => {
+  try { return await QRCode.toDataURL(data, { width:96, margin:1, color:{ dark:'#111', light:'#fff' } }); }
+  catch { return null; }
+};
+
+/* ── PRINT: LIST layout ── */
+const printList = async (pallet, printerId, hasMismatch) => {
+  const pr = PRINTERS[printerId] || PRINTERS.zt;
+  const isA4 = pr.type === 'paper';
+  const { meta, boxes } = pallet;
+  const n = boxes.length;
+  const totalPcs = boxes.reduce((s,b)=>s+b.qty,0);
+  const showCols = boxes.some(b=>b.pn)||boxes.some(b=>b.coo);
+  const qrUrl    = await genQR(encodePallet(pallet));
+  const qrSz     = isA4 ? 64 : 46;
+
+  const colCount = isA4
+    ? (showCols ? Math.min(Math.ceil(n/12),2) : Math.min(Math.ceil(n/14),4))
+    : Math.min(Math.ceil(n/10),5);
+
+  let boxRows;
+  if (isA4) {
+    boxRows = boxes.map((b,i)=>`
+      <div style="display:flex;align-items:center;gap:5px;padding:3px 6px;border-bottom:1px solid #f0f0f0;break-inside:avoid;">
+        <span style="font-size:9px;color:#888;font-weight:700;white-space:nowrap;min-width:42px;">Box ${String(i+1).padStart(2,'0')}</span>
+        ${b.pn?`<span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;color:#92600a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:64px;">${b.pn}</span>`:''}
+        ${b.coo?`<span style="font-size:8px;color:#555;white-space:nowrap;">${b.coo}</span>`:''}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:900;color:#111;margin-left:auto;white-space:nowrap;">${b.qty}</span>
+        <span style="font-size:8px;color:#888;margin-left:2px;">pcs</span>
+      </div>`).join('');
+  } else {
+    boxRows = boxes.map((b,i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:1px 3px;break-inside:avoid;border-bottom:1px solid #f0f0f0;">
+        <span style="font-size:6.5px;color:#888;font-weight:700;white-space:nowrap;">#${String(i+1).padStart(2,'0')}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:${b.qty>=10000?7:b.qty>=1000?8:10}px;font-weight:900;color:#111;">${b.qty}</span>
+      </div>`).join('');
+  }
+
+  const statusBadge = hasMismatch
+    ? `<span class="warn-badge">⚠ MISMATCH</span>`
+    : `<span class="ok">✓ VERIFIED</span>`;
+
+  const w = window.open('','_blank','width=620,height=580,toolbar=0,menubar=0');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Ticket${meta.pn?` — ${meta.pn}`:''}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>${labelCSS(pr.width, isA4)}
+    .boxes-sec{border-top:1px solid #ddd;padding-top:4px;}
+    .boxes-title{font-size:${isA4?9:7}px;font-weight:700;letter-spacing:.1em;color:#888;margin-bottom:3px;}
+    .boxes-cols{columns:${colCount};column-gap:${isA4?10:5}px;column-rule:1px solid #eee;}
+  </style></head><body>
+  <div class="label">
+    <div class="hdr">
+      <div class="hdr-left">
+        <div class="brand">PACKCALC · SEVENUM</div>
+        <div class="pid">${pallet.id}</div>
+      </div>
+      ${qrUrl?`<img src="${qrUrl}" width="${qrSz}" height="${qrSz}" style="image-rendering:pixelated;flex-shrink:0;"/>`:''}
+      <div class="tag">RECEIVING</div>
+    </div>
+    ${meta.pn?`<div class="pn">${meta.pn}</div>`:`<div class="pn-mixed">— mixed / no PN —</div>`}
+    <div class="meta">
+      ${meta.coo?`<div class="mf"><div class="lbl">COO</div><div class="val">${meta.coo}</div></div>`:''}
+      ${meta.po?`<div class="mf"><div class="lbl">PO</div><div class="val">${meta.po}</div></div>`:''}
+      ${meta.ref?`<div class="mf"><div class="lbl">DELIVERY</div><div class="val">${meta.ref}</div></div>`:''}
+    </div>
+    <div class="boxes-sec">
+      <div class="boxes-title">BOX BREAKDOWN — PIECES PER BOX</div>
+      <div class="boxes-cols">${boxRows}</div>
+    </div>
+    <div class="totals">
+      <div class="tot-block"><div class="tot-lbl">TOTAL BOXES</div><div class="tot-val">${boxes.length}</div></div>
+      <div class="tot-block"><div class="tot-lbl">TOTAL PIECES</div><div class="tot-val">${totalPcs}</div></div>
+    </div>
+    <div class="ftr">
+      <span class="ft">SEVENUM · ${dateStr()} · ${pr.name}</span>
+      ${statusBadge}
+    </div>
+  </div>
+  <button class="btn" onclick="window.print()">🖨 &nbsp;Print on ${pr.name}</button>
+  </body></html>`);
+  w.document.close();
+};
+
+/* ── PRINT: BUBBLES layout ── */
+const printBubble = async (pallet, printerId, hasMismatch) => {
+  const pr = PRINTERS[printerId] || PRINTERS.zt;
+  const isA4 = pr.type === 'paper';
+  const { meta, boxes } = pallet;
+  const totalPcs = boxes.reduce((s,b)=>s+b.qty,0);
+  const qrUrl    = await genQR(encodePallet(pallet));
+  const sz       = bubbleSize(boxes.length, isA4);
+  const qrSz     = isA4 ? 64 : 46;
+  const bubbles  = boxes.map((b,i)=>`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${sz.w}px;height:${sz.h}px;border:1.5px solid #ffb700;border-radius:6px;background:#fffbe6;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:${bubbleFontSize(b.qty,sz.fn,sz.w)}px;font-weight:900;color:#111;line-height:1;">${b.qty}</div>
+      <div style="font-size:${sz.fs}px;font-weight:700;color:#888;letter-spacing:.04em;margin-top:2px;">B${String(i+1).padStart(2,'0')}</div>
+    </div>`).join('');
+
+  const statusBadge = hasMismatch
+    ? `<span class="warn-badge">⚠ MISMATCH</span>`
+    : `<span class="ok">✓ VERIFIED</span>`;
+
+
+  const w = window.open('','_blank','width=620,height=560,toolbar=0,menubar=0');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Ticket${meta.pn?` — ${meta.pn}`:''}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>${labelCSS(pr.width, isA4)}</style></head><body>
+  <div class="label">
+    <div class="hdr">
+      <div class="hdr-left">
+        <div class="brand">PACKCALC · SEVENUM</div>
+        <div class="pid">${pallet.id}</div>
+      </div>
+      ${qrUrl?`<img src="${qrUrl}" width="${qrSz}" height="${qrSz}" style="image-rendering:pixelated;flex-shrink:0;"/>`:''}
+      <div class="tag">RECEIVING</div>
+    </div>
+    <div class="meta">
+      ${meta.po?`<div class="mf"><div class="lbl">PO</div><div class="val">${meta.po}</div></div>`:''}
+      ${meta.ref?`<div class="mf"><div class="lbl">DELIVERY</div><div class="val">${meta.ref}</div></div>`:''}
+      <div class="mf"><div class="lbl">PN</div><div class="val">${meta.pn||'—'}</div></div>
+      ${meta.coo?`<div class="mf"><div class="lbl">COO</div><div class="val">${meta.coo}</div></div>`:''}
+      ${meta.worker?`<div class="mf"><div class="lbl">WORKER</div><div class="val">${meta.worker}</div></div>`:''}
+    </div>
+    <div style="border-top:1px solid #ddd;padding-top:5px;">
+      <div style="font-size:${isA4?9:7}px;font-weight:700;letter-spacing:.1em;color:#888;margin-bottom:${isA4?6:5}px;">PIECES PER BOX</div>
+      <div style="display:flex;flex-wrap:wrap;gap:${isA4?6:4}px;">${bubbles}</div>
+    </div>
+    <div class="totals">
+      <div class="tot-block"><div class="tot-lbl">TOTAL BOXES</div><div class="tot-val">${boxes.length}</div></div>
+      <div class="tot-block"><div class="tot-lbl">TOTAL PIECES</div><div class="tot-val">${totalPcs}</div></div>
+    </div>
+    <div class="ftr">
+      <span class="ft">SEVENUM · ${dateStr()} · ${pr.name}</span>
+      ${statusBadge}
+    </div>
+  </div>
+  <button class="btn" onclick="window.print()">🖨 &nbsp;Print on ${pr.name}</button>
+  </body></html>`);
+  w.document.close();
+};
+
+const doPrint = (pallet, printerId, layout, hasMismatch) =>
+  layout === 'bubble'
+    ? printBubble(pallet, printerId, hasMismatch)
+    : printList(pallet, printerId, hasMismatch);
+
+/* ── PRINT: SESSION SUMMARY ── */
+const printSummary = (pallets, packingList, grandBoxes, grandPcs, delivStatus) => {
+  const dt     = dateStr();
+  const expPcs = parseInt(packingList.qty) || 0;
+
+  const dp = (p, k) => [...new Set(p.boxes.filter(b=>b[k]).map(b=>b[k]))];
+
+  const rows = pallets.map((p, i) => {
+    const pPcs = p.boxes.reduce((s, b) => s + b.qty, 0);
+    const pct  = expPcs > 0 ? Math.round(pPcs / expPcs * 100) : null;
+    const pn   = p.meta.pn  || (dp(p,'pn').length  ? dp(p,'pn').join(' / ')  : '—');
+    const coo  = p.meta.coo || (dp(p,'coo').length ? dp(p,'coo').join(' / ') : '—');
+    const po   = p.meta.po  || (dp(p,'po').length  ? dp(p,'po').join(' / ')  : '—');
+    const del  = p.meta.ref || (dp(p,'del').length ? dp(p,'del').join(' / ') : '—');
+    return `<tr>
+      <td class="plt-cell">PLT ${i+1}</td>
+      <td class="num-cell">${p.boxes.length}</td>
+      <td class="num-cell pcs">${pPcs.toLocaleString()}</td>
+      <td class="code-cell">${pn}</td>
+      <td class="code-cell">${coo}</td>
+      <td class="code-cell">${po}</td>
+      <td class="code-cell">${del}</td>
+      <td class="pct-cell">${pct !== null ? pct + '%' : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const plHtml = (packingList.po || packingList.pn || packingList.del.length || packingList.coo.length || packingList.qty) ? `
+    <div class="pl-block">
+      <div class="section-lbl">PACKING LIST</div>
+      <div class="pl-grid">
+        ${packingList.po  ? `<div class="pl-field"><span class="pl-lbl">PO</span><span class="pl-val">${packingList.po}</span></div>` : ''}
+        ${packingList.pn  ? `<div class="pl-field"><span class="pl-lbl">PN</span><span class="pl-val">${packingList.pn}</span></div>` : ''}
+        ${packingList.del.length ? `<div class="pl-field"><span class="pl-lbl">DEL</span><span class="pl-val">${packingList.del.join(' · ')}</span></div>` : ''}
+        ${packingList.coo.length ? `<div class="pl-field"><span class="pl-lbl">COO</span><span class="pl-val">${packingList.coo.join(' · ')}</span></div>` : ''}
+        ${packingList.qty ? `<div class="pl-field"><span class="pl-lbl">TOTAL QTY</span><span class="pl-val">${parseInt(packingList.qty).toLocaleString()} pcs</span></div>` : ''}
+      </div>
+    </div>` : '';
+
+  const statusHtml = delivStatus ? `
+    <div class="status status-${delivStatus}">
+      <div class="status-label">
+        ${delivStatus==='complete'  ? `✓ COMPLETE — All ${grandPcs.toLocaleString()} pieces received` : ''}
+        ${delivStatus==='incomplete'? `⚠ INCOMPLETE — ${(expPcs-grandPcs).toLocaleString()} pieces missing` : ''}
+        ${delivStatus==='over'      ? `✗ OVER COUNT — ${(grandPcs-expPcs).toLocaleString()} pieces exceed packing list` : ''}
+      </div>
+      <div class="status-sub">
+        ${delivStatus==='complete'  ? 'Proceed with WMS registration' : ''}
+        ${delivStatus==='incomplete'? 'Set aside · report to team leader · DO NOT register in WMS' : ''}
+        ${delivStatus==='over'      ? 'Verify contents · report discrepancy before WMS registration' : ''}
+      </div>
+    </div>` : '';
+
+  const w = window.open('', '_blank', 'width=720,height=620,toolbar=0,menubar=0');
+  w.document.write(`<!DOCTYPE html><html><head>
+  <meta charset="UTF-8">
+  <title>Receiving Summary — ${dt}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#f0f0f0;font-family:'Inter',sans-serif;padding:30px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+    .doc{width:190mm;background:#fff;border:1.5px solid #111;padding:20px 22px;display:flex;flex-direction:column;gap:12px;}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:10px;}
+    .brand{font-size:10px;font-weight:900;letter-spacing:.06em;color:#444;}
+    .doc-title{font-size:22px;font-weight:900;letter-spacing:.03em;color:#111;margin-top:3px;}
+    .doc-date{font-size:9px;color:#888;font-weight:700;margin-top:2px;letter-spacing:.04em;}
+    .hdr-stat{text-align:right;}
+    .hdr-stat-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;color:#888;}
+    .hdr-stat-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:900;color:#111;line-height:1.1;}
+    .section-lbl{font-size:8px;font-weight:700;letter-spacing:.12em;color:#888;margin-bottom:6px;}
+    .pl-block{padding:10px 12px;border:1px solid #e8e8e8;border-radius:4px;background:#fafafa;}
+    .pl-grid{display:flex;flex-wrap:wrap;gap:10px 24px;margin-top:6px;}
+    .pl-field{display:flex;flex-direction:column;gap:2px;}
+    .pl-lbl{font-size:7px;font-weight:700;letter-spacing:.1em;color:#888;}
+    .pl-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:#111;}
+    .status{padding:10px 14px;border-radius:4px;}
+    .status-complete{background:#f0fdf4;border:1.5px solid #86efac;}
+    .status-incomplete{background:#fffbeb;border:1.5px solid #fcd34d;}
+    .status-over{background:#fef2f2;border:1.5px solid #fca5a5;}
+    .status-label{font-size:12px;font-weight:800;letter-spacing:.03em;}
+    .status-complete .status-label{color:#15803d;}
+    .status-incomplete .status-label{color:#b45309;}
+    .status-over .status-label{color:#b91c1c;}
+    .status-sub{font-size:9px;margin-top:2px;}
+    .status-complete .status-sub{color:#15803d;}
+    .status-incomplete .status-sub{color:#92400e;}
+    .status-over .status-sub{color:#991b1b;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{font-size:7.5px;font-weight:700;letter-spacing:.1em;color:#888;text-align:left;padding:4px 6px;border-bottom:1.5px solid #111;white-space:nowrap;}
+    thead th.r{text-align:right;}
+    tbody tr:nth-child(even){background:#f9f9f9;}
+    tbody td{padding:5px 6px;border-bottom:1px solid #eee;vertical-align:middle;}
+    .plt-cell{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:#111;white-space:nowrap;}
+    .num-cell{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;text-align:right;white-space:nowrap;}
+    .pcs{color:#16a34a;}
+    .code-cell{font-family:'JetBrains Mono',monospace;font-size:9px;color:#555;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .pct-cell{font-size:10px;color:#888;text-align:right;white-space:nowrap;}
+    tfoot td{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:900;border-top:2px solid #111;padding:6px 6px 4px;background:#f7f7f7;}
+    tfoot .pcs{color:#16a34a;}
+    .ftr{border-top:1px solid #ddd;padding-top:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;}
+    .ft{font-size:8px;color:#aaa;letter-spacing:.04em;}
+    .btn{padding:10px 28px;border:none;border-radius:6px;background:#ffb700;color:#07080b;font-weight:800;font-size:13px;cursor:pointer;}
+    @media print{body{background:#fff;padding:0;}button{display:none!important;}.doc{border:none;width:100%;}}
+  </style></head><body>
+  <div class="doc">
+    <div class="hdr">
+      <div>
+        <div class="brand">PACKCALC · SEVENUM</div>
+        <div class="doc-title">RECEIVING SUMMARY</div>
+        <div class="doc-date">${dt}</div>
+      </div>
+      <div style="display:flex;gap:18px;align-items:flex-start;">
+        <div class="hdr-stat">
+          <div class="hdr-stat-lbl">PALLETS</div>
+          <div class="hdr-stat-val">${pallets.length}</div>
+        </div>
+        <div class="hdr-stat">
+          <div class="hdr-stat-lbl">BOXES</div>
+          <div class="hdr-stat-val">${grandBoxes}</div>
+        </div>
+        <div class="hdr-stat">
+          <div class="hdr-stat-lbl">PIECES</div>
+          <div class="hdr-stat-val" style="color:#16a34a;">${grandPcs.toLocaleString()}</div>
+        </div>
+      </div>
+    </div>
+    ${plHtml}
+    ${statusHtml}
+    <div>
+      <div class="section-lbl">PALLET BREAKDOWN</div>
+      <table>
+        <thead>
+          <tr>
+            <th>PALLET</th>
+            <th class="r">BOXES</th>
+            <th class="r">PIECES</th>
+            <th>PN</th>
+            <th>COO</th>
+            <th>PO</th>
+            <th>DEL</th>
+            <th class="r">${expPcs > 0 ? '% TOTAL' : ''}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        ${pallets.length > 1 ? `
+        <tfoot>
+          <tr>
+            <td style="font-size:8px;font-weight:700;letter-spacing:.08em;color:#888;">GRAND TOTAL</td>
+            <td class="num-cell">${grandBoxes}</td>
+            <td class="num-cell pcs">${grandPcs.toLocaleString()}</td>
+            <td></td><td></td><td></td><td></td>
+            <td class="pct-cell">${expPcs > 0 ? Math.round(grandPcs / expPcs * 100) + '%' : ''}</td>
+          </tr>
+        </tfoot>` : ''}
+      </table>
+    </div>
+    <div class="ftr">
+      <span class="ft">SEVENUM · ${dt}</span>
+      ${expPcs > 0 ? `<span class="ft">EXPECTED ${expPcs.toLocaleString()} PCS · RECEIVED ${grandPcs.toLocaleString()} PCS</span>` : ''}
+    </div>
+  </div>
+  <button class="btn" onclick="window.print()">🖨 &nbsp;Print Summary</button>
+  </body></html>`);
+  w.document.close();
+};
+
+/* ── Fields ── */
+const FIELDS = [
+  { key:'po',  label:'PURCHASE ORDER',   short:'PO',  optional:true  },
+  { key:'del', label:'DELIVERY NR',      short:'DEL', optional:true  },
+  { key:'pn',  label:'PART NUMBER',      short:'PN',  optional:true  },
+  { key:'coo', label:'COUNTRY OF ORIGIN',short:'COO', optional:true  },
+  { key:'qty', label:'PIECE QTY',        short:'QTY', optional:false },
+];
+
+/* ── Pallet initializer ── */
+const initPallet = () => ({ id:genPltId(), meta:{pn:'',coo:'',po:'',ref:'',worker:''}, boxes:[] });
+
+/* ── Tag field for multi-value PL fields (DEL / COO) ── */
+const TagField = ({ label, values, onChange, placeholder }) => {
+  const [inp, setInp] = useState('');
+  const ref = useRef();
+  const add = () => {
+    const v = inp.trim().toUpperCase();
+    if(v && !values.includes(v)) onChange([...values, v]);
+    setInp('');
+    setTimeout(()=>ref.current?.focus(), 30);
+  };
+  return (
+    <div>
+      <span style={{display:'block',fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.08em',marginBottom:values.length?5:3,fontFamily:"'Chakra Petch',sans-serif"}}>{label}</span>
+      {values.length>0&&(
+        <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:5}}>
+          {values.map(v=>(
+            <span key={v} style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 8px',borderRadius:5,background:'rgba(255,183,0,.1)',border:'1px solid rgba(255,183,0,.35)',fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:C.amber}}>
+              {v}
+              <button onClick={()=>onChange(values.filter(x=>x!==v))}
+                style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:14,lineHeight:1,padding:'0 0 0 2px'}}
+                aria-label={`Remove ${v}`}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input ref={ref} value={inp}
+        onChange={e=>setInp(e.target.value.toUpperCase())}
+        onKeyDown={e=>{ if(e.key==='Enter'){ add(); e.preventDefault(); } }}
+        placeholder={placeholder}
+        className="field-inp"/>
+    </div>
+  );
+};
+
+/* ── History modal ── */
+const HistoryModal = ({ onClose }) => {
+  const sessions = React.useMemo(()=>{
+    try{ return JSON.parse(localStorage.getItem('packcalc_history')||'[]'); }
+    catch{ return []; }
+  },[]);
+  const [open, setOpen] = React.useState(null);
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:300,padding:20}}
+         onClick={onClose}>
+      <div style={{background:C.surface,border:`1px solid ${C.borderHi}`,borderRadius:12,width:'100%',maxWidth:500,maxHeight:'80vh',display:'flex',flexDirection:'column'}}
+           onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 18px',borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+          <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:12,fontWeight:800,color:C.text,letterSpacing:'.08em'}}>SESSION HISTORY</span>
+          <button onClick={onClose} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:22,lineHeight:1,padding:'0 4px'}}>&times;</button>
+        </div>
+        {sessions.length===0?(
+          <p style={{color:C.muted,fontSize:12,textAlign:'center',padding:'32px 0',fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em'}}>NO SAVED SESSIONS</p>
+        ):(
+          <div style={{overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:4,padding:12}}>
+            {sessions.map((s,i)=>(
+              <div key={s.id} style={{background:C.s2,borderRadius:8,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+                <button onClick={()=>setOpen(open===i?null:i)}
+                  style={{width:'100%',padding:'9px 14px',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2}}>
+                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:10,fontWeight:700,color:C.text,letterSpacing:'.04em'}}>
+                      {s.pallets.length} PLT · {s.grandBoxes} BOXES · {s.grandPcs?.toLocaleString()} PCS
+                    </span>
+                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,color:C.muted,letterSpacing:'.02em'}}>{s.savedAt}</span>
+                  </div>
+                  <span style={{color:C.muted,fontSize:12,flexShrink:0}}>{open===i?'▲':'▼'}</span>
+                </button>
+                {open===i&&(
+                  <div style={{padding:'0 14px 12px',borderTop:`1px solid ${C.border}`}}>
+                    {s.packingList?.po&&(
+                      <div style={{fontSize:10,color:C.sec,marginTop:8,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.03em'}}>
+                        PO: <span style={{color:C.text}}>{s.packingList.po}</span>
+                        {s.packingList.pn&&<> · PN: <span style={{color:C.text}}>{s.packingList.pn}</span></>}
+                      </div>
+                    )}
+                    <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:3}}>
+                      {s.pallets.map((p,j)=>(
+                        <div key={j} style={{display:'flex',justifyContent:'space-between',fontSize:10,padding:'4px 0',borderBottom:`1px solid ${C.border}`}}>
+                          <span style={{fontFamily:"'Chakra Petch',sans-serif",fontWeight:700,color:C.text}}>{p.name}</span>
+                          <span style={{fontFamily:"'Chakra Petch',sans-serif",color:C.muted}}>{p.boxes} boxes · {p.pcs?.toLocaleString()} pcs</span>
+                        </div>
+                      ))}
+                    </div>
+                    {s.delivStatus&&(
+                      <div style={{marginTop:8,fontSize:10,fontFamily:"'Chakra Petch',sans-serif",color:C.muted}}>
+                        Status: <span style={{color:s.delivStatus==='complete'?C.green:s.delivStatus==='incomplete'?C.yellow:s.delivStatus==='over'?C.red:C.muted}}>
+                          {s.delivStatus.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ════════════════════════════════════════════
+   APP — Smart Pallet ScanCount
+════════════════════════════════════════════ */
+const App = () => {
+  const [cfg,          setCfg]         = useState({ pn:true, coo:true, po:true, del:true, printer:'a4', layout:'bubble' });
+  const [printerOpen,  setPrinterOpen] = useState(false);
+  const [pallets,      setPallets]     = useState(()=>[initPallet()]);
+  const [activePltIdx, setActivePltIdx]= useState(0);
+  const [packingList,  setPackingList] = useState({ po:'', del:[], pn:'', coo:[], qty:'', worker:'' });
+  const [draft,        setDraft]       = useState({});
+  const [stepIdx,      setStepIdx]     = useState(0);
+  const [input,        setInput]       = useState('');
+  const [flash,        setFlash]       = useState(false);
+  const [flashKey,     setFlashKey]    = useState(0);
+  const [lastAddedId,  setLastAddedId] = useState(null);
+  const [historyOpen,  setHistoryOpen] = useState(false);
+  const [plOpen,       setPlOpen]      = useState(true);
+  const [editingBox,   setEditingBox]  = useState(null);
+
+  const inputRef = useRef();
+
+  /* ── Active pallet ── */
+  const idx      = Math.min(activePltIdx, pallets.length-1);
+  const ap       = pallets[idx];
+  const boxes    = ap.boxes;
+  const meta     = ap.meta;
+  const palletId   = ap.id;
+  const palletName = `PLT ${idx+1}`;
+
+  const updActive = fn => setPallets(ps => ps.map((p,i)=>i===idx?fn(p):p));
+
+  /* ── Persistence ── */
+  useEffect(()=>{
+    try{
+      const s = JSON.parse(localStorage.getItem('packcalc')||'null');
+      if(s){
+        setCfg(p=>({...p,...(s.cfg||{})}));
+        if(s.packingList) setPackingList(p=>({...p,...s.packingList}));
+        else if(s.expectedPcs!=null) setPackingList(p=>({...p,qty:s.expectedPcs}));
+        if(s.pallets?.length){
+          setPallets(s.pallets);
+          if(s.activePltIdx!=null) setActivePltIdx(s.activePltIdx);
+        } else if(s.boxes){
+          setPallets([{id:s.palletId||genPltId(),meta:s.meta||{pn:'',coo:'',po:'',ref:'',worker:''},boxes:s.boxes||[]}]);
+        }
+      }
+    } catch{}
+  },[]);
+  useEffect(()=>{
+    try{ localStorage.setItem('packcalc',JSON.stringify({cfg,pallets,activePltIdx:idx,packingList})); } catch{}
+  },[cfg,pallets,idx,packingList]);
+
+  /* ── Derived ── */
+  const steps        = FIELDS.filter(f=>!f.optional||cfg[f.key]);
+  const currentField = steps[stepIdx];
+  const isQty        = currentField?.key==='qty';
+  const totalPcs     = boxes.reduce((s,b)=>s+b.qty,0);
+
+  const distinct    = key => [...new Set(boxes.filter(b=>b[key]).map(b=>b[key]))];
+  const distinctPn  = distinct('pn');
+  const distinctCoo = distinct('coo');
+  const distinctPo  = distinct('po');
+  const distinctDel = distinct('del');
+
+  /* ── Grand totals ── */
+  const grandBoxes  = pallets.reduce((s,p)=>s+p.boxes.length,0);
+  const grandPcs    = pallets.reduce((s,p)=>s+p.boxes.reduce((ss,b)=>ss+b.qty,0),0);
+  const expPcs      = parseInt(packingList.qty)||0;
+  const delivStatus = expPcs===0?null:grandPcs===expPcs?'complete':grandPcs<expPcs?'incomplete':'over';
+
+  const summaryLine = useMemo(()=>{
+    if(!boxes.length) return '';
+    const g={};
+    boxes.forEach(b=>{ g[b.qty]=(g[b.qty]||0)+1; });
+    return Object.entries(g)
+      .sort(([a],[b])=>Number(b)-Number(a))
+      .map(([qty,cnt])=>`${cnt}×${qty}`)
+      .join('  ');
+  },[boxes]);
+
+  /* ── Mismatch detection ── */
+  const { mismatchIds, mismatchFields, modesMap } = useMemo(()=>{
+    const trackedKeys = FIELDS.filter(f=>f.optional && cfg[f.key]).map(f=>f.key);
+    const ids   = new Set();
+    const bads  = new Set();
+    const modes = {};
+
+    if(boxes.length <= 1) return { mismatchIds:ids, mismatchFields:bads, modesMap:modes };
+
+    trackedKeys.forEach(fk=>{
+      const vals = boxes.map(b=>b[fk]).filter(Boolean);
+      if(!vals.length) return;
+      const freq = {};
+      vals.forEach(v=>{ freq[v]=(freq[v]||0)+1; });
+      modes[fk] = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+    });
+
+    boxes.forEach(b=>{
+      for(const fk of trackedKeys){
+        if(modes[fk] && b[fk] && b[fk]!==modes[fk]){
+          ids.add(b.id);
+          bads.add(fk);
+        }
+      }
+    });
+
+    return { mismatchIds:ids, mismatchFields:bads, modesMap:modes };
+  },[boxes, cfg]);
+
+  /* ── Packing list cross-check ── */
+  const plCrossCheck = useMemo(()=>{
+    const allBoxes = pallets.flatMap(p=>p.boxes);
+    if(!allBoxes.length) return null;
+    const pl = packingList;
+    const chk = {};
+    if(pl.po){
+      const vals=[...new Set(allBoxes.map(b=>b.po).filter(Boolean))];
+      const bad=vals.filter(v=>v!==pl.po);
+      chk.po={label:'PO',expected:[pl.po],actual:vals,ok:bad.length===0,unexpected:bad};
+    }
+    if(pl.pn){
+      const vals=[...new Set(allBoxes.map(b=>b.pn).filter(Boolean))];
+      const bad=vals.filter(v=>v!==pl.pn);
+      chk.pn={label:'PN',expected:[pl.pn],actual:vals,ok:bad.length===0,unexpected:bad};
+    }
+    if(pl.del.length){
+      const vals=[...new Set(allBoxes.map(b=>b.del).filter(Boolean))];
+      const bad=vals.filter(v=>!pl.del.includes(v));
+      chk.del={label:'DEL',expected:pl.del,actual:vals,ok:bad.length===0,unexpected:bad};
+    }
+    if(pl.coo.length){
+      const vals=[...new Set(allBoxes.map(b=>b.coo).filter(Boolean))];
+      const bad=vals.filter(v=>!pl.coo.includes(v));
+      chk.coo={label:'COO',expected:pl.coo,actual:vals,ok:bad.length===0,unexpected:bad};
+    }
+    return Object.keys(chk).length ? chk : null;
+  },[packingList,pallets]);
+
+  /* ── Focus ── */
+  useEffect(()=>{ inputRef.current?.focus(); },[stepIdx,idx]);
+
+  /* ── Handlers ── */
+  const doFlash    = ()=>{ setFlash(true); setFlashKey(k=>k+1); setTimeout(()=>setFlash(false),700); };
+  const resetDraft = ()=>{ setDraft({}); setStepIdx(0); setInput(''); setTimeout(()=>inputRef.current?.focus(),40); };
+
+  const commit = nd => {
+    const newId = uid();
+    updActive(p=>({...p,boxes:[...p.boxes,{
+      id:newId,
+      pn: nd.pn  ?nd.pn.toUpperCase() :'',
+      coo:nd.coo ?nd.coo.toUpperCase():'',
+      po: nd.po  ?nd.po.toUpperCase() :'',
+      del:nd.del ?nd.del.toUpperCase():'',
+      qty:nd.qty, time:tsNow(),
+    }]}));
+    setLastAddedId(newId);
+    setTimeout(()=>setLastAddedId(p=>p===newId?null:p),1500);
+    doFlash(); resetDraft();
+  };
+
+  const handleEnter = () => {
+    const f = currentField;
+    let val = input.trim();
+    if(f.key==='qty'){ const q=parseInt(val); if(!q||q<1) return; val=q; }
+    else val = val.toUpperCase();
+    const nd = {...draft,[f.key]:val};
+    setInput('');
+    if(stepIdx<steps.length-1){ setDraft(nd); setStepIdx(stepIdx+1); }
+    else commit(nd);
+  };
+
+  const skipField = () => {
+    const nd = {...draft,[currentField.key]:''};
+    setInput('');
+    if(stepIdx<steps.length-1){ setDraft(nd); setStepIdx(stepIdx+1); }
+    else commit(nd);
+  };
+
+  const delBox    = id  => updActive(p=>({...p,boxes:p.boxes.filter(b=>b.id!==id)}));
+  const updateBox = (id,qty) => updActive(p=>({...p,boxes:p.boxes.map(b=>b.id===id?{...b,qty}:b)}));
+
+  const addPallet = () => {
+    setPallets(ps=>[...ps,initPallet()]);
+    setActivePltIdx(pallets.length);
+    resetDraft();
+  };
+
+  const switchPallet = i => { setActivePltIdx(i); resetDraft(); };
+
+  const removePallet = i => {
+    if(pallets.length===1){
+      if(!confirm('Clear all data from this pallet?')) return;
+      setPallets([initPallet()]); setActivePltIdx(0); resetDraft(); return;
+    }
+    const p=pallets[i];
+    if(!confirm(`Remove PLT ${i+1}${p.boxes.length?` (${p.boxes.length} box${p.boxes.length!==1?'es':''})`:''}? Data will be lost.`)) return;
+    setPallets(ps=>ps.filter((_,pi)=>pi!==i));
+    setActivePltIdx(cur=>Math.min(cur,pallets.length-2));
+    resetDraft();
+  };
+
+  const handlePrint = async () => {
+    const effPn  = meta.pn  ||(distinctPn.length===1?distinctPn[0]:'');
+    const effCoo = meta.coo ||(distinctCoo.length===1?distinctCoo[0]:'');
+    const effPo  = meta.po  ||(distinctPo.length===1?distinctPo[0]:'');
+    const effRef = meta.ref ||(distinctDel.length===1?distinctDel[0]:'');
+    const pallet = {id:palletName,receivedAt:dateStr(),meta:{pn:effPn,coo:effCoo,po:effPo,ref:effRef,worker:packingList.worker||meta.worker||''},boxes};
+    await doPrint(pallet,cfg.printer,cfg.layout,mismatchIds.size>0);
+  };
+
+  const handlePrintPallet = async (p, i) => {
+    const bs=p.boxes;
+    const dp=k=>[...new Set(bs.filter(b=>b[k]).map(b=>b[k]))];
+    const ep={...p,id:`PLT ${i+1}`,meta:{
+      pn:  p.meta.pn  ||(dp('pn').length===1?dp('pn')[0]:''),
+      coo: p.meta.coo ||(dp('coo').length===1?dp('coo')[0]:''),
+      po:  p.meta.po  ||(dp('po').length===1?dp('po')[0]:''),
+      ref: p.meta.ref ||(dp('del').length===1?dp('del')[0]:''),
+      worker: packingList.worker||p.meta.worker||'',
+    }};
+    await doPrint(ep,cfg.printer,cfg.layout,false);
+  };
+
+  const saveSession = () => {
+    if(!grandBoxes) return;
+    try{
+      const entry = {
+        id:uid(), savedAt:dateStr(),
+        packingList,
+        pallets:pallets.map((p,i)=>({
+          name:`PLT ${i+1}`,
+          boxes:p.boxes.length,
+          pcs:p.boxes.reduce((s,b)=>s+b.qty,0),
+        })),
+        grandBoxes, grandPcs, delivStatus, expPcs,
+      };
+      const hist = JSON.parse(localStorage.getItem('packcalc_history')||'[]');
+      hist.unshift(entry);
+      localStorage.setItem('packcalc_history', JSON.stringify(hist.slice(0,20)));
+    } catch{}
+  };
+
+  const handleNewSession = () => {
+    if(!confirm('Start new session? All pallets and data will be cleared.')) return;
+    saveSession();
+    setPallets([initPallet()]); setActivePltIdx(0);
+    setPackingList({po:'',del:[],pn:'',coo:[],qty:''});
+    resetDraft();
+  };
+
+  const handlePrintSummary = () =>
+    printSummary(pallets, packingList, grandBoxes, grandPcs, delivStatus);
+
+  const prInfo = PRINTERS[cfg.printer] || PRINTERS.zt;
+  const fldLbl = (text) => (
+    <span style={{display:'block',fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.08em',marginBottom:3,fontFamily:"'Chakra Petch',sans-serif"}}>{text}</span>
+  );
+
+  const hasMismatch    = mismatchIds.size > 0;
+  const isClean        = boxes.length > 1 && !hasMismatch;
+  const verifyColor    = hasMismatch ? C.red : isClean ? C.green : C.muted;
+  const verifyLabel    = hasMismatch
+    ? `⚠ ${mismatchIds.size} mismatch${mismatchIds.size!==1?'es':''} — ${[...mismatchFields].map(f=>f.toUpperCase()).join(' · ')}`
+    : isClean ? '✓ All fields verified' : '';
+
+  /* ════════════════════════════════
+     RENDER
+  ════════════════════════════════ */
+  return (
+    <div className="app-root">
+
+      {/* Header */}
+      <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px',height:50,background:C.surface,borderBottom:`1px solid ${C.border}`,flexShrink:0,gap:10}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
+          <div style={{width:28,height:28,borderRadius:5,background:C.amber,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill={C.bg} aria-hidden="true">
+              <polygon points="1,8 8,1 15,8 8,8"/>
+              <polygon points="8,8 15,8 8,15" opacity=".6"/>
+            </svg>
+          </div>
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:800,color:C.text,lineHeight:1.2,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.03em',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+              PackCalc
+            </div>
+            <div style={{fontSize:9,color:C.muted,letterSpacing:'.07em',fontFamily:"'Chakra Petch',sans-serif"}}>PALLET SCAN COUNTER · SEVENUM</div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+          <button className="new-btn" onClick={()=>setHistoryOpen(true)} title="Session history">
+            <span style={{fontSize:13,lineHeight:1}}>☰</span>
+            <span style={{fontSize:10,letterSpacing:'.06em'}}>HISTORY</span>
+          </button>
+          <button className="new-btn" onClick={handleNewSession} title="Start new session">
+            <Svg name="reset" size={12} color={C.muted}/>
+            <span style={{fontSize:10,letterSpacing:'.06em'}}>NEW SESSION</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Body */}
+      <div className="app-body">
+
+        {/* LEFT PANEL */}
+        <div className="panel-left">
+
+        {/* Pallet tab bar */}
+        <div className="plt-tabs" role="tablist">
+          {pallets.map((p,i)=>{
+            const active=i===idx;
+            return(
+              <button key={p.id} role="tab" aria-selected={active}
+                className={`plt-tab${active?' active':''}`}
+                onClick={()=>switchPallet(i)}>
+                PLT {i+1}
+                {pallets.length>1&&(
+                  <button className="plt-tab-x" aria-label={`Remove PLT ${i+1}`}
+                    onClick={e=>{e.stopPropagation();removePallet(i);}}>×</button>
+                )}
+              </button>
+            );
+          })}
+          <button className="plt-add" onClick={addPallet} aria-label="Add new pallet">+ PALLET</button>
+        </div>
+
+        {/* ════ SCAN PANEL ════ */}
+        <div className="panel-scan" key={`fl-${flashKey}`}
+             style={{background:flash?'rgba(0,229,105,.05)':'transparent',transition:'background .7s'}}>
+
+          {/* Scrollable content */}
+          <div style={{flex:1,overflowY:'auto',padding:'10px 20px',display:'flex',flexDirection:'column',alignItems:'center'}}>
+            <div style={{width:'100%',maxWidth:760}}>
+
+              {/* Config row */}
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:10}}>
+                <span style={{fontSize:11,color:C.muted,fontWeight:600,letterSpacing:'.05em',fontFamily:"'Chakra Petch',sans-serif"}}>VERIFY:</span>
+                {FIELDS.filter(f=>f.optional).map(f=>{
+                  const on=cfg[f.key];
+                  return(
+                    <button key={f.key} className="ftoggle"
+                      onClick={()=>setCfg(c=>({...c,[f.key]:!c[f.key]}))}
+                      style={{borderColor:on?C.green:C.border,background:on?'rgba(0,229,105,.08)':'transparent',color:on?C.green:C.sec}}>
+                      <span style={{width:12,height:12,borderRadius:3,border:`1.5px solid ${on?C.green:C.muted}`,background:on?C.green:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        {on&&<Svg name="check" size={8} color={C.bg}/>}
+                      </span>
+                      {f.short}
+                    </button>
+                  );
+                })}
+                <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+                  <button className="new-btn" onClick={()=>setPrinterOpen(true)} title="Print settings">
+                    <Svg name="gear" size={13} color={C.amber}/>
+                    <span style={{color:C.amber,fontWeight:800}}>
+                      {cfg.printer==='zt'?'ZT':cfg.printer==='qln'?'QLn':'A4'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Step chips */}
+              <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:8,flexWrap:'wrap'}}>
+                {steps.map((f,i)=>{
+                  const captured=draft[f.key]!==undefined, active=i===stepIdx;
+                  return(
+                    <div key={f.key} className="step-chip" style={{background:active?C.s3:C.surface,borderColor:active?C.amber:captured?C.green:C.border}}>
+                      <span style={{fontSize:8,fontWeight:700,letterSpacing:'.08em',fontFamily:"'Chakra Petch',sans-serif",color:active?C.amber:captured?C.green:C.muted}}>{f.short}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:800,color:captured?C.text:C.muted}}>
+                        {captured?(draft[f.key]||'—'):(active?'…':'—')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Prompt */}
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.07em',marginBottom:5,display:'flex',alignItems:'center',gap:6,justifyContent:'center',fontFamily:"'Chakra Petch',sans-serif"}}>
+                <span style={{width:7,height:7,borderRadius:'50%',background:C.green,animation:'led-pulse 2s infinite',flexShrink:0,display:'inline-block'}}/>
+                {isQty?'TYPE OR SCAN':'SCAN'} {currentField?.label}{currentField?.optional?' (optional)':''}
+              </div>
+
+              {/* Scan zone */}
+              <div style={{display:'flex',justifyContent:'center'}}>
+              <div className="scan-zone" style={{width:240}}>
+                <div className="sz-bl"/><div className="sz-tr"/>
+                <input ref={inputRef} value={input}
+                  onChange={e=>setInput(isQty?e.target.value.replace(/\D/g,''):e.target.value)}
+                  onKeyDown={e=>e.key==='Enter'&&handleEnter()}
+                  inputMode={isQty?'numeric':undefined} type={isQty?'number':'text'} min={isQty?'1':undefined}
+                  placeholder={isQty?'Pieces in this box…':`Scan ${currentField?.short||''} barcode…`}
+                  className="main-inp" autoFocus/>
+                <div style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}>
+                  <Svg name="scan" size={15} color={C.amber}/>
+                </div>
+              </div>
+              </div>
+              <div style={{fontSize:11,color:C.muted,marginTop:7,textAlign:'center',fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.03em'}}>
+                Step {stepIdx+1} of {steps.length} · Enter to confirm
+                {currentField?.optional&&<button onClick={skipField} style={{marginLeft:10,background:'none',border:'none',color:'#4a9eff',cursor:'pointer',fontSize:11,fontWeight:600,textDecoration:'underline'}}>skip {currentField.short}</button>}
+                {stepIdx>0&&<button onClick={resetDraft} style={{marginLeft:10,background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:11,textDecoration:'underline'}}>reset box</button>}
+              </div>
+
+              {/* Mismatch banner */}
+              {hasMismatch&&(
+                <div className="mismatch-warn" style={{marginTop:14}} role="alert">
+                  <Svg name="warn" size={16} color={C.red} style={{flexShrink:0,marginTop:1}}/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:C.red,letterSpacing:'.04em',fontFamily:"'Chakra Petch',sans-serif"}}>
+                      MISMATCH DETECTED — {mismatchIds.size} box{mismatchIds.size!==1?'es':''} flagged
+                    </div>
+                    <div style={{fontSize:11,color:C.sec,marginTop:3,fontFamily:"'Chakra Petch',sans-serif"}}>
+                      Fields: {[...mismatchFields].map(fk=>{
+                        const FLABEL = { pn:'PN', coo:'COO', po:'PO', del:'DEL' };
+                        return `${FLABEL[fk]||fk} (${[...new Set(boxes.map(b=>b[fk]).filter(Boolean))].join(' / ')})`;
+                      }).join(' · ')}
+                    </div>
+                    <div style={{fontSize:10,color:C.muted,marginTop:2,fontFamily:"'Chakra Petch',sans-serif"}}>
+                      Red chips indicate mismatched boxes — tap to review or remove
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Live summary counters */}
+              {boxes.length>0&&(
+                <div style={{display:'flex',justifyContent:'center',gap:0,marginTop:hasMismatch?8:14,marginBottom:4}}>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'4px 20px',borderRight:`1px solid ${C.border}`}}>
+                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:48,lineHeight:1,color:C.amber,letterSpacing:'.02em'}}>{boxes.length}</span>
+                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>BOXES</span>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'4px 20px'}}>
+                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:48,lineHeight:1,color:C.green,letterSpacing:'.02em'}}>{totalPcs.toLocaleString()}</span>
+                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PIECES</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Live chips */}
+              {boxes.length>0&&(
+                <div style={{marginTop:4}}>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:5,justifyContent:'center'}}>
+                    {boxes.map((b,i)=>{
+                      const isNew      = b.id===lastAddedId;
+                      const isMismatch = mismatchIds.has(b.id);
+                      const isEditing  = editingBox===b.id;
+                      const borderColor= isEditing?C.amber:isNew?C.green:isMismatch?C.red:C.border;
+                      const bg         = isEditing?'rgba(0,194,232,.08)':isNew?'rgba(0,229,105,.08)':isMismatch?'rgba(255,56,56,.07)':C.s2;
+                      const labelColor = isNew?C.green:isMismatch?C.red:C.amber;
+                      const qtyFs      = b.qty>=10000?11:b.qty>=1000?14:b.qty>=100?17:20;
+                      const num        = String(i+1).padStart(2,'0');
+                      return(
+                        <div key={b.id} className="box-chip"
+                          style={{borderColor,background:bg,position:'relative',cursor:'pointer'}}
+                          onClick={()=>{ if(!isEditing) setEditingBox(b.id); }}>
+
+                          {/* Delete button */}
+                          <button
+                            onClick={e=>{e.stopPropagation();setEditingBox(null);delBox(b.id);}}
+                            aria-label={`Remove B${num}`}
+                            style={{position:'absolute',top:2,right:3,border:'none',background:'none',
+                              color:C.muted,cursor:'pointer',fontSize:13,lineHeight:1,padding:'1px 2px',
+                              fontWeight:700,zIndex:1}}
+                            title="Eliminar">×</button>
+
+                          {/* Label */}
+                          <span style={{fontSize:9,fontWeight:700,letterSpacing:'.04em',lineHeight:1,marginBottom:3,
+                            fontFamily:"'Chakra Petch',sans-serif",color:labelColor,transition:'color .9s ease'}}>
+                            B{num}
+                          </span>
+
+                          {/* Qty — edit mode or display */}
+                          {isEditing?(
+                            <input
+                              autoFocus
+                              type="number"
+                              defaultValue={b.qty}
+                              onClick={e=>e.stopPropagation()}
+                              onBlur={e=>{const q=parseInt(e.target.value);if(q>0)updateBox(b.id,q);setEditingBox(null);}}
+                              onKeyDown={e=>{
+                                if(e.key==='Enter'){const q=parseInt(e.target.value);if(q>0)updateBox(b.id,q);setEditingBox(null);}
+                                if(e.key==='Escape') setEditingBox(null);
+                              }}
+                              style={{width:52,textAlign:'center',background:'transparent',border:'none',
+                                borderBottom:`1.5px solid ${C.amber}`,color:C.text,outline:'none',padding:'2px 0',
+                                fontFamily:"'JetBrains Mono',monospace",fontSize:qtyFs,fontWeight:900,lineHeight:1,
+                                MozAppearance:'textfield'}}
+                            />
+                          ):(
+                            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:qtyFs,fontWeight:900,color:C.text,lineHeight:1}}>
+                              {b.qty}
+                            </span>
+                          )}
+
+                          <span style={{fontSize:8,fontWeight:700,color:isMismatch?C.red:C.muted,letterSpacing:'.08em',
+                            fontFamily:"'Chakra Petch',sans-serif",marginTop:3}}>
+                            {isMismatch?'⚠':'PCS'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{textAlign:'center',marginTop:10,fontSize:10,color:C.muted,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.05em'}}>
+                    click to edit · × to remove
+                  </div>
+                </div>
+              )}
+
+              {/* Segregation table */}
+              {boxes.length>0&&(()=>{
+                const byQty={};
+                boxes.forEach(b=>{
+                  const k=b.qty;
+                  if(!byQty[k]) byQty[k]={qty:k,count:0,total:0};
+                  byQty[k].count++;
+                  byQty[k].total+=b.qty;
+                });
+                const rows=Object.values(byQty).sort((a,b)=>b.qty-a.qty);
+                const totBoxes=rows.reduce((s,r)=>s+r.count,0);
+                const totPcs=rows.reduce((s,r)=>s+r.total,0);
+                const thStyle={padding:'6px 14px',fontSize:9,fontWeight:700,letterSpacing:'.09em',color:C.muted,fontFamily:"'Chakra Petch',sans-serif",borderBottom:`1px solid ${C.border}`,whiteSpace:'nowrap'};
+                return(
+                  <div style={{marginTop:18,borderRadius:8,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+                    <div style={{padding:'7px 14px',background:C.s3,borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:8}}>
+                      <span style={{fontSize:9,fontWeight:700,letterSpacing:'.11em',color:C.amber,fontFamily:"'Chakra Petch',sans-serif"}}>SEGREGATION</span>
+                      <span style={{fontSize:9,color:C.muted,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.05em'}}>BY BOX SIZE</span>
+                    </div>
+                    <table style={{width:'100%',borderCollapse:'collapse'}}>
+                      <thead>
+                        <tr style={{background:C.s2}}>
+                          <th style={{...thStyle,textAlign:'left'}}>PCS / BOX</th>
+                          <th style={{...thStyle,textAlign:'right'}}>BOXES</th>
+                          <th style={{...thStyle,textAlign:'right'}}>TOTAL PCS</th>
+                          <th style={{...thStyle,textAlign:'right'}}>%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((r,i)=>(
+                          <tr key={r.qty} style={{background:i%2===0?C.surface:C.s2,borderBottom:`1px solid ${C.border}`}}>
+                            <td style={{padding:'7px 14px',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.text,letterSpacing:'.02em'}}>{r.qty.toLocaleString()}</td>
+                            <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.amber}}>{r.count}</td>
+                            <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.green}}>{r.total.toLocaleString()}</td>
+                            <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'Chakra Petch',sans-serif",fontSize:11,color:C.muted}}>{totPcs>0?((r.total/totPcs)*100).toFixed(1)+'%':'—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{background:C.s3,borderTop:`1px solid ${C.border}`}}>
+                          <td style={{padding:'7px 14px',fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:800,letterSpacing:'.09em',color:C.amber}}>TOTAL</td>
+                          <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.amber}}>{totBoxes}</td>
+                          <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.green}}>{totPcs.toLocaleString()}</td>
+                          <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'Chakra Petch',sans-serif",fontSize:11,fontWeight:700,color:C.amber}}>100%</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                );
+              })()}
+
+            </div>
+          </div>
+
+        </div>
+        </div> {/* end panel-left */}
+
+        {/* RIGHT PANEL — Packing List & Controls */}
+        <div className="panel-right">
+          <div style={{flex:1,overflowY:'auto',padding:'16px',display:'flex',flexDirection:'column',alignItems:'center'}}>
+            <div style={{width:'100%'}}>
+
+              {/* Worker field */}
+              <div style={{marginBottom:10}}>
+                {fldLbl('WORKER')}
+                <input value={packingList.worker}
+                  onChange={e=>setPackingList(p=>({...p,worker:e.target.value.toUpperCase()}))}
+                  placeholder="Worker name or ID…"
+                  className="field-inp"/>
+              </div>
+
+              {/* Packing list form */}
+              <div style={{marginBottom:14,borderRadius:9,border:`1px solid ${C.border}`,background:C.s2,overflow:'hidden'}}>
+                <button onClick={()=>setPlOpen(o=>!o)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',background:'none',border:'none',cursor:'pointer'}}>
+                  <span style={{fontSize:9,fontWeight:700,color:C.amber,letterSpacing:'.1em',fontFamily:"'Chakra Petch',sans-serif"}}>PACKING LIST</span>
+                  <span style={{fontSize:11,color:C.muted,lineHeight:1}}>{plOpen?'▲':'▼'}</span>
+                </button>
+                {plOpen&&(
+                  <div style={{padding:'0 16px 14px'}}>
+                    <div style={{marginBottom:10}}>
+                      {fldLbl('TOTAL EXPECTED PIECES')}
+                      <input value={packingList.qty}
+                        onChange={e=>setPackingList(p=>({...p,qty:e.target.value.replace(/\D/g,'')}))}
+                        placeholder="Expected pieces from packing list…"
+                        className="field-inp" inputMode="numeric" type="number" min="1"
+                        style={{fontSize:14,fontWeight:800,height:38}}/>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Status */}
+              {expPcs>0&&(
+                <div className="dlv-status" style={{
+                  borderColor:delivStatus==='complete'?'rgba(0,229,105,.35)':delivStatus==='incomplete'?'rgba(247,192,72,.35)':'rgba(255,56,56,.35)',
+                  background: delivStatus==='complete'?'rgba(0,229,105,.07)':delivStatus==='incomplete'?'rgba(247,192,72,.07)':'rgba(255,56,56,.07)',
+                  marginBottom:14,
+                }}>
+                  <div style={{display:'flex',alignItems:'center',gap:10}}>
+                    <Svg name={delivStatus==='complete'?'shield':'warn'} size={20}
+                      color={delivStatus==='complete'?C.green:delivStatus==='incomplete'?C.yellow:C.red}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:800,letterSpacing:'.05em',fontFamily:"'Chakra Petch',sans-serif",
+                        color:delivStatus==='complete'?C.green:delivStatus==='incomplete'?C.yellow:C.red}}>
+                        {delivStatus==='complete'&&'COMPLETE — Quantities match packing list'}
+                        {delivStatus==='incomplete'&&`INCOMPLETE — ${(expPcs-grandPcs).toLocaleString()} pieces missing`}
+                        {delivStatus==='over'&&`OVER COUNT — ${(grandPcs-expPcs).toLocaleString()} pieces exceed packing list`}
+                      </div>
+                      <div style={{fontSize:10,color:C.sec,marginTop:3,fontFamily:"'Chakra Petch',sans-serif"}}>
+                        {delivStatus==='complete'&&`All ${grandPcs.toLocaleString()} pieces accounted for — proceed with WMS registration`}
+                        {delivStatus==='incomplete'&&'Set aside and report to team leader — DO NOT register in WMS'}
+                        {delivStatus==='over'&&'Verify pallet contents — report discrepancy before WMS registration'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Grand counters */}
+              <div style={{display:'flex',justifyContent:'center',marginBottom:14,padding:'10px 0',borderRadius:8,background:C.s2,border:`1px solid ${C.border}`}}>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'6px 20px',borderRight:`1px solid ${C.border}`}}>
+                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:28,lineHeight:1,color:C.text,letterSpacing:'.02em'}}>{pallets.length}</span>
+                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PALLETS</span>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'6px 20px',borderRight:`1px solid ${C.border}`}}>
+                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:28,lineHeight:1,color:C.amber,letterSpacing:'.02em'}}>{grandBoxes}</span>
+                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>BOXES</span>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'6px 20px'}}>
+                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:28,lineHeight:1,color:C.green,letterSpacing:'.02em'}}>{grandPcs.toLocaleString()}</span>
+                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PIECES</span>
+                </div>
+              </div>
+
+              {/* Pallet breakdown */}
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginBottom:8,fontFamily:"'Chakra Petch',sans-serif"}}>
+                PALLET BREAKDOWN
+              </div>
+              {pallets.map((p,i)=>{
+                const pPcs=p.boxes.reduce((s,b)=>s+b.qty,0);
+                const isActive=i===idx;
+                const pct=expPcs>0?Math.round(pPcs/expPcs*100):null;
+                return(
+                  <div key={p.id} className="dlv-row"
+                    style={{background:isActive?'rgba(255,183,0,.04)':C.s2,borderColor:isActive?C.amber:C.border}}>
+                    <button onClick={()=>switchPallet(i)}
+                      style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:isActive?C.amber:C.text}}>
+                        PLT {i+1}
+                      </span>
+                    </button>
+                    <span style={{fontSize:11,color:C.sec,fontFamily:"'Chakra Petch',sans-serif"}}>
+                      {p.boxes.length} box{p.boxes.length!==1?'es':''}
+                    </span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:800,color:C.green}}>
+                      {pPcs.toLocaleString()} pcs
+                    </span>
+                    {pct!==null&&(
+                      <span style={{fontSize:10,color:C.muted,fontFamily:"'Chakra Petch',sans-serif"}}>{pct}%</span>
+                    )}
+                    <div style={{flex:1}}/>
+                    <button onClick={()=>handlePrintPallet(p,i)} disabled={p.boxes.length===0}
+                      style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:6,
+                        border:`1px solid ${p.boxes.length?C.border:C.s3}`,background:'transparent',
+                        cursor:p.boxes.length?'pointer':'not-allowed',
+                        color:p.boxes.length?C.text:C.muted,
+                        fontSize:11,fontWeight:700,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.05em',
+                        flexShrink:0,whiteSpace:'nowrap'}}>
+                      <Svg name="print" size={14} color={p.boxes.length?C.amber:C.muted}/>
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                disabled={grandBoxes===0}
+                onClick={handlePrintSummary}
+                style={{
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                  width:'100%',marginTop:10,marginBottom:14,padding:'10px 14px',
+                  borderRadius:8,border:`1px solid ${grandBoxes?C.borderHi:C.border}`,
+                  background:grandBoxes?C.s3:'transparent',
+                  cursor:grandBoxes?'pointer':'not-allowed',
+                  fontFamily:"'Chakra Petch',sans-serif",
+                  fontSize:11,fontWeight:800,letterSpacing:'.07em',
+                  color:grandBoxes?C.text:C.muted,
+                  minHeight:36,whiteSpace:'nowrap',
+                }}>
+                <Svg name="print" size={13} color={grandBoxes?C.amber:C.muted}/>
+                PRINT SUMMARY
+              </button>
+
+
+            </div>
+          </div>
+        </div> {/* end panel-right */}
+
+      </div>
+
+      {/* History modal */}
+      {historyOpen&&<HistoryModal onClose={()=>setHistoryOpen(false)}/>}
+
+      {/* Printer settings modal */}
+      {printerOpen&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.78)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}
+             onClick={()=>setPrinterOpen(false)}>
+          <div style={{background:C.surface,border:`1px solid ${C.borderHi}`,borderRadius:12,padding:22,width:'100%',maxWidth:360}}
+               onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <Svg name="gear" size={15} color={C.amber}/>
+                <span style={{fontSize:12,fontWeight:700,color:C.text,letterSpacing:'.06em',fontFamily:"'Chakra Petch',sans-serif"}}>PRINT SETTINGS</span>
+              </div>
+              <button onClick={()=>setPrinterOpen(false)} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:24,lineHeight:1,padding:'0 2px'}}>&times;</button>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {Object.entries(PRINTERS).map(([id,pr])=>{
+                const active=cfg.printer===id;
+                return(
+                  <button key={id} onClick={()=>{setCfg(c=>({...c,printer:id}));setPrinterOpen(false);}}
+                    style={{display:'flex',alignItems:'center',gap:14,padding:'13px 16px',borderRadius:9,
+                      border:`2px solid ${active?C.amber:C.border}`,
+                      background:active?'rgba(255,183,0,.08)':C.s2,
+                      cursor:'pointer',textAlign:'left',width:'100%',transition:'border-color .15s,background .15s'}}>
+                    <div style={{width:36,height:36,borderRadius:7,background:active?C.amber:C.s3,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <Svg name="print" size={16} color={active?C.bg:C.muted}/>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:800,color:active?C.amber:C.text,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em'}}>
+                        {pr.name}
+                      </div>
+                      <div style={{fontSize:10,color:C.sec,marginTop:2,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em'}}>
+                        {pr.label} · {pr.type==='thermal'?'Thermal label':'Regular paper'}
+                      </div>
+                    </div>
+                    {active&&(
+                      <div style={{width:20,height:20,borderRadius:'50%',background:C.amber,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <Svg name="check" size={11} color={C.bg}/>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
