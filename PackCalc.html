@@ -887,10 +887,12 @@ const App = () => {
     doFlash(); resetDraft();
   };
 
-  const handleEnter = () => {
+  const handleEnter = (domVal) => {
     const f = currentField;
-    let val = input.trim();
-    if(f.key==='qty'){ const q=parseInt(val); if(!q||q<1) return; val=q; }
+    // domVal is passed from onKeyDown e.target.value to bypass stale React closure
+    // when the barcode scanner fires characters+Enter faster than React re-renders
+    let val = (domVal !== undefined ? domVal : input).trim();
+    if(f.key==='qty'){ val=val.replace(/\D/g,''); const q=parseInt(val); if(!q||q<1) return; val=q; }
     else val = val.toUpperCase();
     const nd = {...draft,[f.key]:val};
     setInput('');
@@ -1117,7 +1119,7 @@ const App = () => {
                 <div className="sz-bl"/><div className="sz-tr"/>
                 <input ref={inputRef} value={input}
                   onChange={e=>setInput(isQty?e.target.value.replace(/\D/g,''):e.target.value)}
-                  onKeyDown={e=>e.key==='Enter'&&handleEnter()}
+                  onKeyDown={e=>{if(e.key==='Enter'){handleEnter(e.target.value);e.preventDefault();}}}
                   inputMode={isQty?'numeric':undefined} type={isQty?'number':'text'} min={isQty?'1':undefined}
                   placeholder={isQty?'Pieces in this box…':`Scan ${currentField?.short||''} barcode…`}
                   className="main-inp" autoFocus/>
