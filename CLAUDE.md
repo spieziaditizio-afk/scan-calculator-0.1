@@ -68,13 +68,15 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project: PackCalc
 
-**Architecture**: `PackCalc.html` is the only file — standalone React 18 app via CDN + Babel standalone. No npm, no build step. All JS, CSS, and JSX in one file.
+**Architecture**: `PackCalc.html` is the app — standalone React 18 via CDN + Babel standalone. No npm, no build step. All JS, CSS, and JSX in one file. `ReceivingBento.html` is a separate static design mockup (light-WMS bento grid of the receiving form) — not part of the app.
 
 **Verify**: Open in a browser. No automated tests or build step exists.
 
-**Component pattern**: Defined at module level as `const X = ({props}) => {...}`. Color object `const C = {...}` is at module level (~line 125), alongside CSS `--var` tokens — keep both in sync when changing colors.
+**Component pattern**: Defined at module level as `const X = ({props}) => {...}`. Color object `const C = {...}` now maps each key to a CSS var (`bg:'var(--bg)'`, etc.), so the CSS `--var` tokens in `:root` are the single source of truth. To change colors, edit `:root` (light) / `:root[data-theme="dark"]` (dark) only — NOT `C`.
 
-**Font stack**: Chakra Petch (all UI) + JetBrains Mono (codes/data only). Bebas Neue and Barlow Condensed are removed — do not re-add.
+**Theming / dark mode**: Default is the light WMS palette (slate primary `#334155` + green accent `#059669`, cool-gray bg, white cards); dark mode lives in `:root[data-theme="dark"]`. The header DARK/LIGHT toggle sets `data-theme` on `document.documentElement` and persists to `localStorage` `packcalc_theme`. The navy header gradient is hardcoded (identical in both themes). The `Svg` component applies `stroke` via `style={{stroke:color}}` (NOT the `stroke=` attribute) so `var()` colors resolve under theming — don't revert it.
+
+**Font stack**: Fira Sans (all UI) + JetBrains Mono (codes/data only), via Google Fonts; print templates use `Inter`. (Was Chakra Petch + Bebas/Barlow — all removed.)
 
 **Print templates**: `printSummary`, `printList`, `printBubble` use `#ffb700` intentionally (paper docs). Don't apply app UI colors there.
 
@@ -82,7 +84,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **Pallet naming**: Display as `PLT ${idx+1}` (index-based). Reuses indices when pallets are deleted — intentional.
 
-**localStorage key**: `packcalc_history` — rolling 20 sessions, saved on NEW SESSION click.
+**localStorage keys**: `packcalc_history` (rolling 20 sessions, saved on NEW SESSION click); `packcalc` (config/state restore); `packcalc_theme` (`light`/`dark`).
 
 **Edit safety**: Before `replace_all` on large blocks, read the current section first — prior edits may have changed `old_string`.
 

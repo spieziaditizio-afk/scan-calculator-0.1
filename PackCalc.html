@@ -4,19 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PackCalc — Pallet Scan Counter</title>
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('packcalc_theme')||'light');}catch(e){}</script>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root{
-      --bg:#07080b;--surface:#0c0e14;--s2:#111520;--s3:#181d29;
-      --border:#1a2030;--border-hi:#26304a;
-      --text:#eef0f7;--sec:#7a8aaa;--muted:#52607c;
-      --amber:#ffb700;--amber-glow:rgba(255,183,0,.15);
-      --green:#00e569;--red:#ff3838;--yellow:#f7c048;
+      --bg:#eef2f7;--surface:#ffffff;--s2:#f8fafc;--s3:#e7edf5;
+      --border:#e2e8f0;--border-hi:#cbd5e1;
+      --text:#0f172a;--sec:#64748b;--muted:#94a3b8;
+      --amber:#334155;--amber-glow:rgba(51,65,85,.18);
+      --green:#059669;--red:#dc2626;--yellow:#ea580c;
+    }
+    :root[data-theme="dark"]{
+      --bg:#0f172a;--surface:#1b2536;--s2:#161f30;--s3:#25314a;
+      --border:#2b3850;--border-hi:#3b4a68;
+      --text:#e8edf5;--sec:#94a3b8;--muted:#64748b;
+      --amber:#60a5fa;--amber-glow:rgba(96,165,250,.22);
+      --red:#f87171;--yellow:#fb923c;
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     input,button{font-family:inherit;}
@@ -24,7 +32,7 @@
     ::-webkit-scrollbar-track{background:var(--surface);}
     ::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:2px;}
 
-    @keyframes led-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,105,.3);}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,229,105,0);}}
+    @keyframes led-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(5,150,105,.3);}50%{opacity:.7;box-shadow:0 0 0 5px rgba(5,150,105,0);}}
     @keyframes bracket-draw{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
     @keyframes chip-pop{0%{transform:scale(.6);opacity:0;}65%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
@@ -64,9 +72,12 @@
     .new-btn{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sec);cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.04em;min-height:38px;}
     .new-btn:hover{border-color:var(--border-hi);color:var(--text);}
     .new-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+    .app-header .new-btn{border-color:rgba(255,255,255,.18);color:#cbd5e1;}
+    .app-header .new-btn:hover{border-color:rgba(255,255,255,.4);color:#fff;}
+    .app-header .new-btn:focus-visible{outline-color:#fff;}
 
-    .tkt-btn{width:100%;padding:15px 0;border-radius:8px;border:none;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:800;letter-spacing:.08em;display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;}
-    .tkt-btn:enabled{background:var(--amber);color:var(--bg);}
+    .tkt-btn{width:100%;padding:15px 0;border-radius:8px;border:none;cursor:pointer;font-family:'Fira Sans',sans-serif;font-size:16px;font-weight:800;letter-spacing:.08em;display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;}
+    .tkt-btn:enabled{background:var(--green);color:#fff;}
     .tkt-btn:disabled{background:var(--s3);color:var(--muted);cursor:not-allowed;}
     .tkt-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
 
@@ -84,11 +95,11 @@
     .lt-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
 
     .mixed-warn{display:flex;align-items:center;gap:6px;justify-content:center;font-size:13px;font-weight:600;color:var(--yellow);letter-spacing:.04em;}
-    .mismatch-warn{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,56,56,.3);background:rgba(255,56,56,.06);}
+    .mismatch-warn{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-radius:8px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.06);}
 
     /* ── Desktop layout ── */
     html,body,#root{height:100%;overflow:hidden;}
-    body{background:var(--bg);color:var(--text);font-family:'Chakra Petch',system-ui,sans-serif;}
+    body{background:var(--bg);color:var(--text);font-family:'Fira Sans',system-ui,sans-serif;}
     .app-root{height:100%;display:flex;flex-direction:column;}
     .app-body{flex:1;display:flex;flex-direction:row;overflow:hidden;}
     .panel-left{order:2;flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -98,16 +109,16 @@
     /* ── Pallet tab bar ── */
     .plt-tabs{display:flex;align-items:stretch;overflow-x:auto;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none;}
     .plt-tabs::-webkit-scrollbar{display:none;}
-    .plt-tab{display:flex;align-items:center;gap:5px;padding:0 11px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--sec);transition:color .15s,border-color .15s;white-space:nowrap;}
+    .plt-tab{display:flex;align-items:center;gap:5px;padding:0 11px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Fira Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--sec);transition:color .15s,border-color .15s;white-space:nowrap;}
     .plt-tab.active{color:var(--amber);border-bottom-color:var(--amber);}
     .plt-tab:hover:not(.active){color:var(--text);}
     .plt-tab-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:9px;background:var(--s3);color:var(--sec);transition:background .15s,color .15s;}
     .plt-tab.active .plt-tab-badge{background:var(--amber);color:var(--bg);}
     .plt-tab-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px;margin-left:1px;}
     .plt-tab-x:hover{color:var(--red);}
-    .plt-add{display:flex;align-items:center;gap:5px;padding:0 13px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--green);}
+    .plt-add{display:flex;align-items:center;gap:5px;padding:0 13px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Fira Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--green);}
     .plt-add:hover{color:var(--text);}
-    .plt-delivery{display:flex;align-items:center;gap:5px;padding:0 14px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;border-left:1px solid var(--border);cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--sec);margin-left:auto;}
+    .plt-delivery{display:flex;align-items:center;gap:5px;padding:0 14px;height:36px;flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;border-left:1px solid var(--border);cursor:pointer;font-family:'Fira Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--sec);margin-left:auto;}
     .plt-delivery.active{color:var(--amber);border-bottom-color:var(--amber);}
     .plt-delivery:hover:not(.active){color:var(--text);}
 
@@ -124,11 +135,11 @@ const { useState, useEffect, useRef, useMemo } = React;
 
 /* ── Design tokens ── */
 const C = {
-  bg:'#07080b',surface:'#0c0e14',s2:'#111520',s3:'#181d29',
-  border:'#1a2030',borderHi:'#26304a',
-  text:'#eef0f7',sec:'#7a8aaa',muted:'#52607c',
-  amber:'#ffb700',amberGlow:'rgba(255,183,0,.15)',
-  green:'#00e569',red:'#ff3838',yellow:'#f7c048',
+  bg:'var(--bg)',surface:'var(--surface)',s2:'var(--s2)',s3:'var(--s3)',
+  border:'var(--border)',borderHi:'var(--border-hi)',
+  text:'var(--text)',sec:'var(--sec)',muted:'var(--muted)',
+  amber:'var(--amber)',amberGlow:'var(--amber-glow)',
+  green:'var(--green)',red:'var(--red)',yellow:'var(--yellow)',
 };
 const PATHS = {
   check:'M20 6 9 17l-5-5',
@@ -140,9 +151,11 @@ const PATHS = {
   sliders:'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
   shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
   gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+  moon:'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
+  sun:'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42',
 };
 const Svg = ({ name, size=16, color='currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{stroke:color}}>
     {(PATHS[name]||'').split(/(?=[ML])/).map((seg,i)=><path key={i} d={seg.trim()}/>)}
   </svg>
 );
@@ -554,11 +567,11 @@ const TagField = ({ label, values, onChange, placeholder }) => {
   };
   return (
     <div>
-      <span style={{display:'block',fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.08em',marginBottom:values.length?5:3,fontFamily:"'Chakra Petch',sans-serif"}}>{label}</span>
+      <span style={{display:'block',fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.08em',marginBottom:values.length?5:3,fontFamily:"'Fira Sans',sans-serif"}}>{label}</span>
       {values.length>0&&(
         <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:5}}>
           {values.map(v=>(
-            <span key={v} style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 8px',borderRadius:5,background:'rgba(255,183,0,.1)',border:'1px solid rgba(255,183,0,.35)',fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:C.amber}}>
+            <span key={v} style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 8px',borderRadius:5,background:'rgba(51,65,85,.08)',border:'1px solid rgba(51,65,85,.25)',fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:C.amber}}>
               {v}
               <button onClick={()=>onChange(values.filter(x=>x!==v))}
                 style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:14,lineHeight:1,padding:'0 0 0 2px'}}
@@ -589,11 +602,11 @@ const HistoryModal = ({ onClose }) => {
       <div style={{background:C.surface,border:`1px solid ${C.borderHi}`,borderRadius:12,width:'100%',maxWidth:500,maxHeight:'80vh',display:'flex',flexDirection:'column'}}
            onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 18px',borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-          <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:12,fontWeight:800,color:C.text,letterSpacing:'.08em'}}>SESSION HISTORY</span>
+          <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:12,fontWeight:800,color:C.text,letterSpacing:'.08em'}}>SESSION HISTORY</span>
           <button onClick={onClose} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:22,lineHeight:1,padding:'0 4px'}}>&times;</button>
         </div>
         {sessions.length===0?(
-          <p style={{color:C.muted,fontSize:12,textAlign:'center',padding:'32px 0',fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em'}}>NO SAVED SESSIONS</p>
+          <p style={{color:C.muted,fontSize:12,textAlign:'center',padding:'32px 0',fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.04em'}}>NO SAVED SESSIONS</p>
         ):(
           <div style={{overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:4,padding:12}}>
             {sessions.map((s,i)=>(
@@ -601,17 +614,17 @@ const HistoryModal = ({ onClose }) => {
                 <button onClick={()=>setOpen(open===i?null:i)}
                   style={{width:'100%',padding:'9px 14px',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2}}>
-                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:10,fontWeight:700,color:C.text,letterSpacing:'.04em'}}>
+                    <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:10,fontWeight:700,color:C.text,letterSpacing:'.04em'}}>
                       {s.pallets.length} PLT · {s.grandBoxes} BOXES · {s.grandPcs?.toLocaleString()} PCS
                     </span>
-                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,color:C.muted,letterSpacing:'.02em'}}>{s.savedAt}</span>
+                    <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:9,color:C.muted,letterSpacing:'.02em'}}>{s.savedAt}</span>
                   </div>
                   <span style={{color:C.muted,fontSize:12,flexShrink:0}}>{open===i?'▲':'▼'}</span>
                 </button>
                 {open===i&&(
                   <div style={{padding:'0 14px 12px',borderTop:`1px solid ${C.border}`}}>
                     {s.packingList?.po&&(
-                      <div style={{fontSize:10,color:C.sec,marginTop:8,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.03em'}}>
+                      <div style={{fontSize:10,color:C.sec,marginTop:8,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.03em'}}>
                         PO: <span style={{color:C.text}}>{s.packingList.po}</span>
                         {s.packingList.pn&&<> · PN: <span style={{color:C.text}}>{s.packingList.pn}</span></>}
                       </div>
@@ -619,13 +632,13 @@ const HistoryModal = ({ onClose }) => {
                     <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:3}}>
                       {s.pallets.map((p,j)=>(
                         <div key={j} style={{display:'flex',justifyContent:'space-between',fontSize:10,padding:'4px 0',borderBottom:`1px solid ${C.border}`}}>
-                          <span style={{fontFamily:"'Chakra Petch',sans-serif",fontWeight:700,color:C.text}}>{p.name}</span>
-                          <span style={{fontFamily:"'Chakra Petch',sans-serif",color:C.muted}}>{p.boxes} boxes · {p.pcs?.toLocaleString()} pcs</span>
+                          <span style={{fontFamily:"'Fira Sans',sans-serif",fontWeight:700,color:C.text}}>{p.name}</span>
+                          <span style={{fontFamily:"'Fira Sans',sans-serif",color:C.muted}}>{p.boxes} boxes · {p.pcs?.toLocaleString()} pcs</span>
                         </div>
                       ))}
                     </div>
                     {s.delivStatus&&(
-                      <div style={{marginTop:8,fontSize:10,fontFamily:"'Chakra Petch',sans-serif",color:C.muted}}>
+                      <div style={{marginTop:8,fontSize:10,fontFamily:"'Fira Sans',sans-serif",color:C.muted}}>
                         Status: <span style={{color:s.delivStatus==='complete'?C.green:s.delivStatus==='incomplete'?C.yellow:s.delivStatus==='over'?C.red:C.muted}}>
                           {s.delivStatus.toUpperCase()}
                         </span>
@@ -670,24 +683,24 @@ const GuideModal = ({ onClose }) => {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 18px',borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <div style={{width:22,height:22,borderRadius:6,background:C.amber,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <span style={{fontSize:12,fontWeight:900,color:C.bg,lineHeight:1,fontFamily:"'Chakra Petch',sans-serif"}}>?</span>
+              <span style={{fontSize:12,fontWeight:900,color:C.bg,lineHeight:1,fontFamily:"'Fira Sans',sans-serif"}}>?</span>
             </div>
-            <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:12,fontWeight:800,color:C.text,letterSpacing:'.08em'}}>QUICK GUIDE &amp; WORKFLOW</span>
+            <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:12,fontWeight:800,color:C.text,letterSpacing:'.08em'}}>QUICK GUIDE &amp; WORKFLOW</span>
           </div>
           <button onClick={onClose} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:22,lineHeight:1,padding:'0 4px'}}>&times;</button>
         </div>
         <div style={{overflowY:'auto',flex:1,padding:'16px 18px',display:'flex',flexDirection:'column',gap:20}}>
 
           <div>
-            <div style={{fontSize:9,fontWeight:800,color:C.muted,letterSpacing:'.12em',fontFamily:"'Chakra Petch',sans-serif",marginBottom:10}}>WORKFLOW</div>
+            <div style={{fontSize:9,fontWeight:800,color:C.muted,letterSpacing:'.12em',fontFamily:"'Fira Sans',sans-serif",marginBottom:10}}>WORKFLOW</div>
             <div style={{display:'flex',flexDirection:'column',gap:9}}>
               {workflow.map(w=>(
                 <div key={w.step} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
                   <div style={{width:22,height:22,borderRadius:5,background:C.amber,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>
-                    <span style={{fontSize:10,fontWeight:900,color:C.bg,fontFamily:"'Chakra Petch',sans-serif",lineHeight:1}}>{w.step}</span>
+                    <span style={{fontSize:10,fontWeight:900,color:C.bg,fontFamily:"'Fira Sans',sans-serif",lineHeight:1}}>{w.step}</span>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:10,fontWeight:800,color:C.text,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.06em',marginBottom:3}}>{w.title}</div>
+                    <div style={{fontSize:10,fontWeight:800,color:C.text,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.06em',marginBottom:3}}>{w.title}</div>
                     <div style={{fontSize:11,color:C.sec,lineHeight:1.5}}>{w.desc}</div>
                     {w.ok&&(
                       <div style={{marginTop:5,display:'flex',flexDirection:'column',gap:3}}>
@@ -709,11 +722,11 @@ const GuideModal = ({ onClose }) => {
           </div>
 
           <div>
-            <div style={{fontSize:9,fontWeight:800,color:C.muted,letterSpacing:'.12em',fontFamily:"'Chakra Petch',sans-serif",marginBottom:10}}>QUICK REFERENCE</div>
+            <div style={{fontSize:9,fontWeight:800,color:C.muted,letterSpacing:'.12em',fontFamily:"'Fira Sans',sans-serif",marginBottom:10}}>QUICK REFERENCE</div>
             <div style={{border:`1px solid ${C.border}`,borderRadius:8,overflow:'hidden'}}>
               {ref.map((r,i)=>(
                 <div key={r.term} style={{display:'flex',gap:12,padding:'9px 14px',alignItems:'baseline',background:i%2===0?'transparent':C.s2,borderBottom:i<ref.length-1?`1px solid ${C.border}`:'none'}}>
-                  <span style={{fontSize:10,fontWeight:800,color:C.amber,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em',flexShrink:0,minWidth:118}}>{r.term}</span>
+                  <span style={{fontSize:10,fontWeight:800,color:C.amber,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.04em',flexShrink:0,minWidth:118}}>{r.term}</span>
                   <span style={{fontSize:11,color:C.sec,lineHeight:1.4}}>{r.desc}</span>
                 </div>
               ))}
@@ -745,6 +758,12 @@ const App = () => {
   const [guideOpen,    setGuideOpen]   = useState(false);
   const [plOpen,       setPlOpen]      = useState(true);
   const [editingBox,   setEditingBox]  = useState(null);
+  const [theme,        setTheme]       = useState(()=>localStorage.getItem('packcalc_theme')||'light');
+
+  useEffect(()=>{
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('packcalc_theme', theme);
+  },[theme]);
 
   const inputRef = useRef();
 
@@ -984,7 +1003,7 @@ const App = () => {
 
   const prInfo = PRINTERS[cfg.printer] || PRINTERS.zt;
   const fldLbl = (text) => (
-    <span style={{display:'block',fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.08em',marginBottom:3,fontFamily:"'Chakra Petch',sans-serif"}}>{text}</span>
+    <span style={{display:'block',fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.08em',marginBottom:3,fontFamily:"'Fira Sans',sans-serif"}}>{text}</span>
   );
 
   const hasMismatch    = mismatchIds.size > 0;
@@ -1001,24 +1020,28 @@ const App = () => {
     <div className="app-root">
 
       {/* Header */}
-      <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px',height:50,background:C.surface,borderBottom:`1px solid ${C.border}`,flexShrink:0,gap:10}}>
+      <header className="app-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px',height:50,background:'linear-gradient(135deg,#1e293b,#334155)',borderBottom:'none',flexShrink:0,gap:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
-          <div style={{width:28,height:28,borderRadius:5,background:C.amber,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill={C.bg} aria-hidden="true">
+          <div style={{width:30,height:30,borderRadius:8,background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="#fff" aria-hidden="true">
               <polygon points="1,8 8,1 15,8 8,8"/>
               <polygon points="8,8 15,8 8,15" opacity=".6"/>
             </svg>
           </div>
           <div style={{minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:800,color:C.text,lineHeight:1.2,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.03em',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+            <div style={{fontSize:13,fontWeight:800,color:'#fff',lineHeight:1.2,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.03em',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
               PackCalc
             </div>
-            <div style={{fontSize:9,color:C.muted,letterSpacing:'.07em',fontFamily:"'Chakra Petch',sans-serif"}}>PALLET SCAN COUNTER · SEVENUM</div>
+            <div style={{fontSize:9,color:'#cbd5e1',letterSpacing:'.07em',fontFamily:"'Fira Sans',sans-serif"}}>PALLET SCAN COUNTER · SEVENUM</div>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+          <button className="new-btn" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} title="Toggle dark mode" aria-label="Toggle dark mode">
+            <Svg name={theme==='dark'?'sun':'moon'} size={13} color="#cbd5e1"/>
+            <span style={{fontSize:10,letterSpacing:'.06em'}}>{theme==='dark'?'LIGHT':'DARK'}</span>
+          </button>
           <button className="new-btn" onClick={()=>setGuideOpen(true)} title="Quick guide & workflow"
-            style={{borderColor:C.amber,color:C.amber}}>
+            style={{borderColor:'rgba(255,255,255,.22)',color:'#e2e8f0'}}>
             <span style={{fontSize:13,lineHeight:1,fontWeight:900}}>?</span>
             <span style={{fontSize:10,letterSpacing:'.06em'}}>GUIDE</span>
           </button>
@@ -1060,7 +1083,7 @@ const App = () => {
 
         {/* ════ SCAN PANEL ════ */}
         <div className="panel-scan" key={`fl-${flashKey}`}
-             style={{background:flash?'rgba(0,229,105,.05)':'transparent',transition:'background .7s'}}>
+             style={{background:flash?'rgba(5,150,105,.07)':'transparent',transition:'background .7s'}}>
 
           {/* Scrollable content */}
           <div style={{flex:1,overflowY:'auto',padding:'10px 20px',display:'flex',flexDirection:'column',alignItems:'center'}}>
@@ -1068,13 +1091,13 @@ const App = () => {
 
               {/* Config row */}
               <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:10}}>
-                <span style={{fontSize:11,color:C.muted,fontWeight:600,letterSpacing:'.05em',fontFamily:"'Chakra Petch',sans-serif"}}>VERIFY:</span>
+                <span style={{fontSize:11,color:C.muted,fontWeight:600,letterSpacing:'.05em',fontFamily:"'Fira Sans',sans-serif"}}>VERIFY:</span>
                 {FIELDS.filter(f=>f.optional).map(f=>{
                   const on=cfg[f.key];
                   return(
                     <button key={f.key} className="ftoggle"
                       onClick={()=>setCfg(c=>({...c,[f.key]:!c[f.key]}))}
-                      style={{borderColor:on?C.green:C.border,background:on?'rgba(0,229,105,.08)':'transparent',color:on?C.green:C.sec}}>
+                      style={{borderColor:on?C.green:C.border,background:on?'rgba(5,150,105,.08)':'transparent',color:on?C.green:C.sec}}>
                       <span style={{width:12,height:12,borderRadius:3,border:`1.5px solid ${on?C.green:C.muted}`,background:on?C.green:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                         {on&&<Svg name="check" size={8} color={C.bg}/>}
                       </span>
@@ -1098,7 +1121,7 @@ const App = () => {
                   const captured=draft[f.key]!==undefined, active=i===stepIdx;
                   return(
                     <div key={f.key} className="step-chip" style={{background:active?C.s3:C.surface,borderColor:active?C.amber:captured?C.green:C.border}}>
-                      <span style={{fontSize:8,fontWeight:700,letterSpacing:'.08em',fontFamily:"'Chakra Petch',sans-serif",color:active?C.amber:captured?C.green:C.muted}}>{f.short}</span>
+                      <span style={{fontSize:8,fontWeight:700,letterSpacing:'.08em',fontFamily:"'Fira Sans',sans-serif",color:active?C.amber:captured?C.green:C.muted}}>{f.short}</span>
                       <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:800,color:captured?C.text:C.muted}}>
                         {captured?(draft[f.key]||'—'):(active?'…':'—')}
                       </span>
@@ -1108,7 +1131,7 @@ const App = () => {
               </div>
 
               {/* Prompt */}
-              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.07em',marginBottom:5,display:'flex',alignItems:'center',gap:6,justifyContent:'center',fontFamily:"'Chakra Petch',sans-serif"}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.07em',marginBottom:5,display:'flex',alignItems:'center',gap:6,justifyContent:'center',fontFamily:"'Fira Sans',sans-serif"}}>
                 <span style={{width:7,height:7,borderRadius:'50%',background:C.green,animation:'led-pulse 2s infinite',flexShrink:0,display:'inline-block'}}/>
                 {isQty?'TYPE OR SCAN':'SCAN'} {currentField?.label}{currentField?.optional?' (optional)':''}
               </div>
@@ -1128,7 +1151,7 @@ const App = () => {
                 </div>
               </div>
               </div>
-              <div style={{fontSize:11,color:C.muted,marginTop:7,textAlign:'center',fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.03em'}}>
+              <div style={{fontSize:11,color:C.muted,marginTop:7,textAlign:'center',fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.03em'}}>
                 Step {stepIdx+1} of {steps.length} · Enter to confirm
                 {currentField?.optional&&<button onClick={skipField} style={{marginLeft:10,background:'none',border:'none',color:'#4a9eff',cursor:'pointer',fontSize:11,fontWeight:600,textDecoration:'underline'}}>skip {currentField.short}</button>}
                 {stepIdx>0&&<button onClick={resetDraft} style={{marginLeft:10,background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:11,textDecoration:'underline'}}>reset box</button>}
@@ -1139,16 +1162,16 @@ const App = () => {
                 <div className="mismatch-warn" style={{marginTop:14}} role="alert">
                   <Svg name="warn" size={16} color={C.red} style={{flexShrink:0,marginTop:1}}/>
                   <div>
-                    <div style={{fontSize:12,fontWeight:800,color:C.red,letterSpacing:'.04em',fontFamily:"'Chakra Petch',sans-serif"}}>
+                    <div style={{fontSize:12,fontWeight:800,color:C.red,letterSpacing:'.04em',fontFamily:"'Fira Sans',sans-serif"}}>
                       MISMATCH DETECTED — {mismatchIds.size} box{mismatchIds.size!==1?'es':''} flagged
                     </div>
-                    <div style={{fontSize:11,color:C.sec,marginTop:3,fontFamily:"'Chakra Petch',sans-serif"}}>
+                    <div style={{fontSize:11,color:C.sec,marginTop:3,fontFamily:"'Fira Sans',sans-serif"}}>
                       Fields: {[...mismatchFields].map(fk=>{
                         const FLABEL = { pn:'PN', coo:'COO', po:'PO', del:'DEL' };
                         return `${FLABEL[fk]||fk} (${[...new Set(boxes.map(b=>b[fk]).filter(Boolean))].join(' / ')})`;
                       }).join(' · ')}
                     </div>
-                    <div style={{fontSize:10,color:C.muted,marginTop:2,fontFamily:"'Chakra Petch',sans-serif"}}>
+                    <div style={{fontSize:10,color:C.muted,marginTop:2,fontFamily:"'Fira Sans',sans-serif"}}>
                       Red chips indicate mismatched boxes — tap to review or remove
                     </div>
                   </div>
@@ -1159,12 +1182,12 @@ const App = () => {
               {boxes.length>0&&(
                 <div style={{display:'flex',justifyContent:'center',gap:0,marginTop:hasMismatch?8:14,marginBottom:4}}>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'4px 20px',borderRight:`1px solid ${C.border}`}}>
-                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:48,lineHeight:1,color:C.amber,letterSpacing:'.02em'}}>{boxes.length}</span>
-                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>BOXES</span>
+                    <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:48,lineHeight:1,color:C.amber,letterSpacing:'.02em'}}>{boxes.length}</span>
+                    <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>BOXES</span>
                   </div>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'4px 20px'}}>
-                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:48,lineHeight:1,color:C.green,letterSpacing:'.02em'}}>{totalPcs.toLocaleString()}</span>
-                    <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PIECES</span>
+                    <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:48,lineHeight:1,color:C.green,letterSpacing:'.02em'}}>{totalPcs.toLocaleString()}</span>
+                    <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PIECES</span>
                   </div>
                 </div>
               )}
@@ -1178,7 +1201,7 @@ const App = () => {
                       const isMismatch = mismatchIds.has(b.id);
                       const isEditing  = editingBox===b.id;
                       const borderColor= isEditing?C.amber:isNew?C.green:isMismatch?C.red:C.border;
-                      const bg         = isEditing?'rgba(0,194,232,.08)':isNew?'rgba(0,229,105,.08)':isMismatch?'rgba(255,56,56,.07)':C.s2;
+                      const bg         = isEditing?'rgba(37,99,235,.08)':isNew?'rgba(5,150,105,.08)':isMismatch?'rgba(220,38,38,.07)':C.s2;
                       const labelColor = isNew?C.green:isMismatch?C.red:C.amber;
                       const qtyFs      = b.qty>=10000?11:b.qty>=1000?14:b.qty>=100?17:20;
                       const num        = String(i+1).padStart(2,'0');
@@ -1198,7 +1221,7 @@ const App = () => {
 
                           {/* Label */}
                           <span style={{fontSize:9,fontWeight:700,letterSpacing:'.04em',lineHeight:1,marginBottom:3,
-                            fontFamily:"'Chakra Petch',sans-serif",color:labelColor,transition:'color .9s ease'}}>
+                            fontFamily:"'Fira Sans',sans-serif",color:labelColor,transition:'color .9s ease'}}>
                             B{num}
                           </span>
 
@@ -1226,7 +1249,7 @@ const App = () => {
                           )}
 
                           <span style={{fontSize:8,fontWeight:700,color:isMismatch?C.red:C.muted,letterSpacing:'.08em',
-                            fontFamily:"'Chakra Petch',sans-serif",marginTop:3}}>
+                            fontFamily:"'Fira Sans',sans-serif",marginTop:3}}>
                             {isMismatch?'⚠':'PCS'}
                           </span>
                         </div>
@@ -1234,7 +1257,7 @@ const App = () => {
                     })}
                   </div>
 
-                  <div style={{textAlign:'center',marginTop:10,fontSize:10,color:C.muted,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.05em'}}>
+                  <div style={{textAlign:'center',marginTop:10,fontSize:10,color:C.muted,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.05em'}}>
                     click to edit · × to remove
                   </div>
                 </div>
@@ -1252,12 +1275,12 @@ const App = () => {
                 const rows=Object.values(byQty).sort((a,b)=>b.qty-a.qty);
                 const totBoxes=rows.reduce((s,r)=>s+r.count,0);
                 const totPcs=rows.reduce((s,r)=>s+r.total,0);
-                const thStyle={padding:'6px 14px',fontSize:9,fontWeight:700,letterSpacing:'.09em',color:C.muted,fontFamily:"'Chakra Petch',sans-serif",borderBottom:`1px solid ${C.border}`,whiteSpace:'nowrap'};
+                const thStyle={padding:'6px 14px',fontSize:9,fontWeight:700,letterSpacing:'.09em',color:C.muted,fontFamily:"'Fira Sans',sans-serif",borderBottom:`1px solid ${C.border}`,whiteSpace:'nowrap'};
                 return(
                   <div style={{marginTop:18,borderRadius:8,border:`1px solid ${C.border}`,overflow:'hidden'}}>
                     <div style={{padding:'7px 14px',background:C.s3,borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{fontSize:9,fontWeight:700,letterSpacing:'.11em',color:C.amber,fontFamily:"'Chakra Petch',sans-serif"}}>SEGREGATION</span>
-                      <span style={{fontSize:9,color:C.muted,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.05em'}}>BY BOX SIZE</span>
+                      <span style={{fontSize:9,fontWeight:700,letterSpacing:'.11em',color:C.amber,fontFamily:"'Fira Sans',sans-serif"}}>SEGREGATION</span>
+                      <span style={{fontSize:9,color:C.muted,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.05em'}}>BY BOX SIZE</span>
                     </div>
                     <table style={{width:'100%',borderCollapse:'collapse'}}>
                       <thead>
@@ -1274,16 +1297,16 @@ const App = () => {
                             <td style={{padding:'7px 14px',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.text,letterSpacing:'.02em'}}>{r.qty.toLocaleString()}</td>
                             <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.amber}}>{r.count}</td>
                             <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.green}}>{r.total.toLocaleString()}</td>
-                            <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'Chakra Petch',sans-serif",fontSize:11,color:C.muted}}>{totPcs>0?((r.total/totPcs)*100).toFixed(1)+'%':'—'}</td>
+                            <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'Fira Sans',sans-serif",fontSize:11,color:C.muted}}>{totPcs>0?((r.total/totPcs)*100).toFixed(1)+'%':'—'}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr style={{background:C.s3,borderTop:`1px solid ${C.border}`}}>
-                          <td style={{padding:'7px 14px',fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:800,letterSpacing:'.09em',color:C.amber}}>TOTAL</td>
+                          <td style={{padding:'7px 14px',fontFamily:"'Fira Sans',sans-serif",fontSize:9,fontWeight:800,letterSpacing:'.09em',color:C.amber}}>TOTAL</td>
                           <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.amber}}>{totBoxes}</td>
                           <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.green}}>{totPcs.toLocaleString()}</td>
-                          <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'Chakra Petch',sans-serif",fontSize:11,fontWeight:700,color:C.amber}}>100%</td>
+                          <td style={{padding:'7px 14px',textAlign:'right',fontFamily:"'Fira Sans',sans-serif",fontSize:11,fontWeight:700,color:C.amber}}>100%</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -1314,7 +1337,7 @@ const App = () => {
               {/* Packing list form */}
               <div style={{marginBottom:14,borderRadius:9,border:`1px solid ${C.border}`,background:C.s2,overflow:'hidden'}}>
                 <button onClick={()=>setPlOpen(o=>!o)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',background:'none',border:'none',cursor:'pointer'}}>
-                  <span style={{fontSize:9,fontWeight:700,color:C.amber,letterSpacing:'.1em',fontFamily:"'Chakra Petch',sans-serif"}}>PACKING LIST</span>
+                  <span style={{fontSize:9,fontWeight:700,color:C.amber,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif"}}>PACKING LIST</span>
                   <span style={{fontSize:11,color:C.muted,lineHeight:1}}>{plOpen?'▲':'▼'}</span>
                 </button>
                 {plOpen&&(
@@ -1334,21 +1357,21 @@ const App = () => {
               {/* Status */}
               {expPcs>0&&(
                 <div className="dlv-status" style={{
-                  borderColor:delivStatus==='complete'?'rgba(0,229,105,.35)':delivStatus==='incomplete'?'rgba(247,192,72,.35)':'rgba(255,56,56,.35)',
-                  background: delivStatus==='complete'?'rgba(0,229,105,.07)':delivStatus==='incomplete'?'rgba(247,192,72,.07)':'rgba(255,56,56,.07)',
+                  borderColor:delivStatus==='complete'?'rgba(5,150,105,.35)':delivStatus==='incomplete'?'rgba(234,88,12,.35)':'rgba(220,38,38,.35)',
+                  background: delivStatus==='complete'?'rgba(5,150,105,.07)':delivStatus==='incomplete'?'rgba(234,88,12,.08)':'rgba(220,38,38,.07)',
                   marginBottom:14,
                 }}>
                   <div style={{display:'flex',alignItems:'center',gap:10}}>
                     <Svg name={delivStatus==='complete'?'shield':'warn'} size={20}
                       color={delivStatus==='complete'?C.green:delivStatus==='incomplete'?C.yellow:C.red}/>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:800,letterSpacing:'.05em',fontFamily:"'Chakra Petch',sans-serif",
+                      <div style={{fontSize:13,fontWeight:800,letterSpacing:'.05em',fontFamily:"'Fira Sans',sans-serif",
                         color:delivStatus==='complete'?C.green:delivStatus==='incomplete'?C.yellow:C.red}}>
                         {delivStatus==='complete'&&'COMPLETE — Quantities match packing list'}
                         {delivStatus==='incomplete'&&`INCOMPLETE — ${(expPcs-grandPcs).toLocaleString()} pieces missing`}
                         {delivStatus==='over'&&`OVER COUNT — ${(grandPcs-expPcs).toLocaleString()} pieces exceed packing list`}
                       </div>
-                      <div style={{fontSize:10,color:C.sec,marginTop:3,fontFamily:"'Chakra Petch',sans-serif"}}>
+                      <div style={{fontSize:10,color:C.sec,marginTop:3,fontFamily:"'Fira Sans',sans-serif"}}>
                         {delivStatus==='complete'&&`All ${grandPcs.toLocaleString()} pieces accounted for — proceed with WMS registration`}
                         {delivStatus==='incomplete'&&'Set aside and report to team leader — DO NOT register in WMS'}
                         {delivStatus==='over'&&'Verify pallet contents — report discrepancy before WMS registration'}
@@ -1361,21 +1384,21 @@ const App = () => {
               {/* Grand counters */}
               <div style={{display:'flex',justifyContent:'center',marginBottom:14,padding:'10px 0',borderRadius:8,background:C.s2,border:`1px solid ${C.border}`}}>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'6px 20px',borderRight:`1px solid ${C.border}`}}>
-                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:28,lineHeight:1,color:C.text,letterSpacing:'.02em'}}>{pallets.length}</span>
-                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PALLETS</span>
+                  <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:28,lineHeight:1,color:C.text,letterSpacing:'.02em'}}>{pallets.length}</span>
+                  <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PALLETS</span>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'6px 20px',borderRight:`1px solid ${C.border}`}}>
-                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:28,lineHeight:1,color:C.amber,letterSpacing:'.02em'}}>{grandBoxes}</span>
-                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>BOXES</span>
+                  <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:28,lineHeight:1,color:C.amber,letterSpacing:'.02em'}}>{grandBoxes}</span>
+                  <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>BOXES</span>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'6px 20px'}}>
-                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:28,lineHeight:1,color:C.green,letterSpacing:'.02em'}}>{grandPcs.toLocaleString()}</span>
-                  <span style={{fontFamily:"'Chakra Petch',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PIECES</span>
+                  <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:28,lineHeight:1,color:C.green,letterSpacing:'.02em'}}>{grandPcs.toLocaleString()}</span>
+                  <span style={{fontFamily:"'Fira Sans',sans-serif",fontSize:9,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginTop:2}}>PIECES</span>
                 </div>
               </div>
 
               {/* Pallet breakdown */}
-              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginBottom:8,fontFamily:"'Chakra Petch',sans-serif"}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.1em',marginBottom:8,fontFamily:"'Fira Sans',sans-serif"}}>
                 PALLET BREAKDOWN
               </div>
               {pallets.map((p,i)=>{
@@ -1384,21 +1407,21 @@ const App = () => {
                 const pct=expPcs>0?Math.round(pPcs/expPcs*100):null;
                 return(
                   <div key={p.id} className="dlv-row"
-                    style={{background:isActive?'rgba(255,183,0,.04)':C.s2,borderColor:isActive?C.amber:C.border}}>
+                    style={{background:isActive?'rgba(51,65,85,.05)':C.s2,borderColor:isActive?C.amber:C.border}}>
                     <button onClick={()=>switchPallet(i)}
                       style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
                       <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:isActive?C.amber:C.text}}>
                         PLT {i+1}
                       </span>
                     </button>
-                    <span style={{fontSize:11,color:C.sec,fontFamily:"'Chakra Petch',sans-serif"}}>
+                    <span style={{fontSize:11,color:C.sec,fontFamily:"'Fira Sans',sans-serif"}}>
                       {p.boxes.length} box{p.boxes.length!==1?'es':''}
                     </span>
                     <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:800,color:C.green}}>
                       {pPcs.toLocaleString()} pcs
                     </span>
                     {pct!==null&&(
-                      <span style={{fontSize:10,color:C.muted,fontFamily:"'Chakra Petch',sans-serif"}}>{pct}%</span>
+                      <span style={{fontSize:10,color:C.muted,fontFamily:"'Fira Sans',sans-serif"}}>{pct}%</span>
                     )}
                     <div style={{flex:1}}/>
                     <button onClick={()=>handlePrintPallet(p,i)} disabled={p.boxes.length===0}
@@ -1406,7 +1429,7 @@ const App = () => {
                         border:`1px solid ${p.boxes.length?C.border:C.s3}`,background:'transparent',
                         cursor:p.boxes.length?'pointer':'not-allowed',
                         color:p.boxes.length?C.text:C.muted,
-                        fontSize:11,fontWeight:700,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.05em',
+                        fontSize:11,fontWeight:700,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.05em',
                         flexShrink:0,whiteSpace:'nowrap'}}>
                       <Svg name="print" size={14} color={p.boxes.length?C.amber:C.muted}/>
                     </button>
@@ -1422,7 +1445,7 @@ const App = () => {
                   borderRadius:8,border:`1px solid ${grandBoxes?C.borderHi:C.border}`,
                   background:grandBoxes?C.s3:'transparent',
                   cursor:grandBoxes?'pointer':'not-allowed',
-                  fontFamily:"'Chakra Petch',sans-serif",
+                  fontFamily:"'Fira Sans',sans-serif",
                   fontSize:11,fontWeight:800,letterSpacing:'.07em',
                   color:grandBoxes?C.text:C.muted,
                   minHeight:36,whiteSpace:'nowrap',
@@ -1453,7 +1476,7 @@ const App = () => {
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <Svg name="gear" size={15} color={C.amber}/>
-                <span style={{fontSize:12,fontWeight:700,color:C.text,letterSpacing:'.06em',fontFamily:"'Chakra Petch',sans-serif"}}>PRINT SETTINGS</span>
+                <span style={{fontSize:12,fontWeight:700,color:C.text,letterSpacing:'.06em',fontFamily:"'Fira Sans',sans-serif"}}>PRINT SETTINGS</span>
               </div>
               <button onClick={()=>setPrinterOpen(false)} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:24,lineHeight:1,padding:'0 2px'}}>&times;</button>
             </div>
@@ -1464,16 +1487,16 @@ const App = () => {
                   <button key={id} onClick={()=>{setCfg(c=>({...c,printer:id}));setPrinterOpen(false);}}
                     style={{display:'flex',alignItems:'center',gap:14,padding:'13px 16px',borderRadius:9,
                       border:`2px solid ${active?C.amber:C.border}`,
-                      background:active?'rgba(255,183,0,.08)':C.s2,
+                      background:active?'rgba(51,65,85,.07)':C.s2,
                       cursor:'pointer',textAlign:'left',width:'100%',transition:'border-color .15s,background .15s'}}>
                     <div style={{width:36,height:36,borderRadius:7,background:active?C.amber:C.s3,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                       <Svg name="print" size={16} color={active?C.bg:C.muted}/>
                     </div>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:800,color:active?C.amber:C.text,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em'}}>
+                      <div style={{fontSize:13,fontWeight:800,color:active?C.amber:C.text,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.04em'}}>
                         {pr.name}
                       </div>
-                      <div style={{fontSize:10,color:C.sec,marginTop:2,fontFamily:"'Chakra Petch',sans-serif",letterSpacing:'.04em'}}>
+                      <div style={{fontSize:10,color:C.sec,marginTop:2,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.04em'}}>
                         {pr.label} · {pr.type==='thermal'?'Thermal label':'Regular paper'}
                       </div>
                     </div>
