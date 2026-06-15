@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
@@ -169,7 +169,6 @@ const dateStr  = () => new Date().toLocaleString('en-GB',{dateStyle:'medium',tim
 /* ── Printers ── */
 const PRINTERS = {
   zt:  { name:'Zebra ZT',     width:'12.8cm', label:'12.8×6.3 cm', type:'thermal' },
-  qln: { name:'Zebra QLn420', width:'11.3cm', label:'11.3×6.3 cm', type:'thermal' },
   a4:  { name:'A4 Sheet',     width:'170mm',  label:'A4 portrait',  type:'paper'   },
 };
 
@@ -235,9 +234,13 @@ const encodePallet = (pallet) => {
   const qtys = pallet.boxes.map(b=>b.qty).join(',');
   return `PC1|${pallet.id}|${m.pn||''}|${m.po||''}|${m.ref||''}|${m.coo||''}|${qtys}`;
 };
-const genQR = async (data) => {
-  try { return await QRCode.toDataURL(data, { width:96, margin:1, color:{ dark:'#111', light:'#fff' } }); }
-  catch { return null; }
+const genQR = (data) => {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(data);
+    qr.make();
+    return qr.createDataURL(3);   // cellSize 3 + default quiet-zone margin; black on white (prints on thermal)
+  } catch { return null; }
 };
 
 /* ── PRINT: LIST layout ── */
@@ -752,7 +755,7 @@ const GuideModal = ({ onClose }) => {
    APP — Smart Pallet ScanCount
 ════════════════════════════════════════════ */
 const App = () => {
-  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true });
+  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false });
   const [printerOpen,  setPrinterOpen] = useState(false);
   const [pallets,      setPallets]     = useState(()=>[initPallet()]);
   const [activePltIdx, setActivePltIdx]= useState(0);
@@ -767,6 +770,8 @@ const App = () => {
   const [guideOpen,    setGuideOpen]   = useState(false);
   const [plOpen,       setPlOpen]      = useState(true);
   const [editingBox,   setEditingBox]  = useState(null);
+  const [pnScans,      setPnScans]     = useState([]);
+  const [pnInput,      setPnInput]     = useState('');
   const [theme,        setTheme]       = useState(()=>localStorage.getItem('packcalc_theme')||'light');
 
   useEffect(()=>{
@@ -842,16 +847,20 @@ const App = () => {
     const bads  = new Set();
     const modes = {};
 
-    if(boxes.length <= 1) return { mismatchIds:ids, mismatchFields:bads, modesMap:modes };
-
-    trackedKeys.forEach(fk=>{
-      const vals = boxes.map(b=>b[fk]).filter(Boolean);
-      if(!vals.length) return;
-      const freq = {};
-      vals.forEach(v=>{ freq[v]=(freq[v]||0)+1; });
-      modes[fk] = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
-    });
+    // Pallet PN (scanned identity) is ground truth — flag boxes that differ even for a single box.
     if(meta.pn && trackedKeys.includes('pn')) modes.pn = meta.pn.toUpperCase();
+
+    // Statistical mode for the other tracked fields needs >=2 boxes.
+    if(boxes.length >= 2){
+      trackedKeys.forEach(fk=>{
+        if(fk==='pn' && modes.pn) return;
+        const vals = boxes.map(b=>b[fk]).filter(Boolean);
+        if(!vals.length) return;
+        const freq = {};
+        vals.forEach(v=>{ freq[v]=(freq[v]||0)+1; });
+        modes[fk] = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+      });
+    }
 
     boxes.forEach(b=>{
       for(const fk of trackedKeys){
@@ -1099,52 +1108,50 @@ const App = () => {
           <div style={{flex:1,overflowY:'auto',padding:'10px 20px',display:'flex',flexDirection:'column',alignItems:'center'}}>
             <div style={{width:'100%',maxWidth:760}}>
 
-              {/* Pallet identity */}
-              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:12}}>
-                <div style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif",marginBottom:8}}>PALLET IDENTITY</div>
-                <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-                  <div style={{flex:'1 1 220px',minWidth:170}}>
-                    <label style={{fontSize:9,fontWeight:700,letterSpacing:'.08em',color:C.sec,fontFamily:"'Fira Sans',sans-serif"}}>PART NUMBER · scan box 1</label>
-                    <input value={meta.pn||''}
-                      onChange={e=>updActive(p=>({...p,meta:{...p.meta,pn:e.target.value.toUpperCase()}}))}
-                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur();inputRef.current?.focus();}}}
-                      placeholder="scan PN barcode…"
-                      style={{width:'100%',marginTop:4,padding:'8px 10px',minHeight:38,background:C.s2,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,outline:'none'}}/>
-                  </div>
-                  {[['po','PO'],['ref','DELIVERY'],['coo','COO']].map(([key,label])=>(
-                    <div key={key} style={{flex:'1 1 130px',minWidth:110}}>
-                      <label style={{fontSize:9,fontWeight:700,letterSpacing:'.08em',color:C.sec,fontFamily:"'Fira Sans',sans-serif"}}>{label}</label>
-                      <input value={meta[key]||''}
-                        onChange={e=>updActive(p=>({...p,meta:{...p.meta,[key]:e.target.value.toUpperCase()}}))}
-                        placeholder="type…"
-                        style={{width:'100%',marginTop:4,padding:'8px 10px',minHeight:38,background:C.s2,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,outline:'none'}}/>
+              {/* PN check panel (optional, enabled from Print settings) */}
+              {cfg.pnCheck&&(()=>{
+                const distinct=[...new Set(pnScans)];
+                const ok=distinct.length===1;
+                return(
+                  <div style={{background:C.surface,border:`1px solid ${ok?C.green:distinct.length>1?C.red:C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:12}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                      <span style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif"}}>PN CHECK</span>
+                      {pnScans.length>0&&<button className="new-btn" onClick={()=>setPnScans([])} style={{minHeight:28,padding:'4px 10px'}}>RESET</button>}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <input value={pnInput}
+                      onChange={e=>setPnInput(e.target.value)}
+                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();const v=e.target.value.trim().toUpperCase();if(v)setPnScans(s=>[...s,v]);setPnInput('');}}}
+                      placeholder="scan each box's PN barcode…"
+                      style={{width:'100%',padding:'9px 12px',minHeight:40,background:C.s2,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,outline:'none'}}/>
+                    <div style={{marginTop:10,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                      {pnScans.length===0?(
+                        <span style={{fontSize:12,color:C.muted,fontFamily:"'Fira Sans',sans-serif"}}>Scan the boxes' PN barcodes to confirm they all match.</span>
+                      ):ok?(
+                        <>
+                          <span style={{fontSize:14,fontWeight:800,color:C.green,fontFamily:"'Fira Sans',sans-serif"}}>✓ MATCH</span>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,color:C.text}}>{distinct[0]}</span>
+                          <span style={{fontSize:11,color:C.muted}}>· {pnScans.length} scanned</span>
+                          <button className="new-btn" onClick={()=>updActive(p=>({...p,meta:{...p.meta,pn:distinct[0]}}))}
+                            style={{marginLeft:'auto',borderColor:C.green,color:C.green}}>use this PN on label</button>
+                        </>
+                      ):(
+                        <>
+                          <span style={{fontSize:14,fontWeight:800,color:C.red,fontFamily:"'Fira Sans',sans-serif"}}>✗ MISMATCH</span>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:C.text}}>{distinct.join(' ≠ ')}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Config row */}
               <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:10}}>
-                <span style={{fontSize:11,color:C.muted,fontWeight:600,letterSpacing:'.05em',fontFamily:"'Fira Sans',sans-serif"}}>VERIFY:</span>
-                {FIELDS.filter(f=>f.optional).map(f=>{
-                  const on=cfg[f.key];
-                  return(
-                    <button key={f.key} className="ftoggle"
-                      title={f.key==='pn'?'Verify PN on every box — flags any box ≠ pallet PN':`Scan ${f.short} on every box`}
-                      onClick={()=>setCfg(c=>({...c,[f.key]:!c[f.key]}))}
-                      style={{borderColor:on?C.green:C.border,background:on?'rgba(5,150,105,.08)':'transparent',color:on?C.green:C.sec}}>
-                      <span style={{width:12,height:12,borderRadius:3,border:`1.5px solid ${on?C.green:C.muted}`,background:on?C.green:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                        {on&&<Svg name="check" size={8} color={C.bg}/>}
-                      </span>
-                      {f.short}
-                    </button>
-                  );
-                })}
                 <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
                   <button className="new-btn" onClick={()=>setPrinterOpen(true)} title="Print settings">
                     <Svg name="gear" size={13} color={C.amber}/>
                     <span style={{color:C.amber,fontWeight:800}}>
-                      {cfg.printer==='zt'?'ZT':cfg.printer==='qln'?'QLn':'A4'}
+                      {cfg.printer==='zt'?'ZT':'A4'}
                     </span>
                   </button>
                 </div>
@@ -1543,6 +1550,14 @@ const App = () => {
                   </button>
                 );
               })}
+            </div>
+            <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
+              <div style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif",marginBottom:8}}>VERIFICATION</div>
+              <label style={{display:'flex',alignItems:'center',gap:10,padding:'7px 2px',cursor:'pointer'}}>
+                <input type="checkbox" checked={cfg.pnCheck} onChange={e=>setCfg(c=>({...c,pnCheck:e.target.checked}))}
+                  style={{width:16,height:16,accentColor:C.amber,cursor:'pointer',flexShrink:0}}/>
+                <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Fira Sans',sans-serif"}}>PN check (scan box barcodes to confirm they match)</span>
+              </label>
             </div>
             <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
               <div style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif",marginBottom:8}}>SHOW ON LABEL</div>

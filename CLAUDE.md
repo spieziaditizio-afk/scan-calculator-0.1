@@ -80,7 +80,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **Font stack**: Fira Sans (all UI) + JetBrains Mono (codes/data only), via Google Fonts; print templates use `Inter`. (Was Chakra Petch + Bebas/Barlow — all removed.)
 
-**Print templates** (`printBubble`/`printList`/`printSummary`): A4 (`isA4`) = color — amber `#ffb700`, green/red badges. Thermal (ZT/QLn, `!isA4`) = monochrome via the `k` palette object in `labelCSS` (branch on `!isA4`). Respect this A4-vs-thermal split on any print-color edit; never apply app UI colors here.
+**Print templates** (`printBubble`/`printList`/`printSummary`): A4 (`isA4`) = color — amber `#ffb700`, green/red badges. Thermal (ZT only, `!isA4`) = monochrome via the `k` palette object in `labelCSS` (branch on `!isA4`). PackCalc prints to **Zebra ZT + A4 only** (QLn was removed; the external TC520L app handles QLn420 reprints). Respect this A4-vs-thermal split on any print-color edit; never apply app UI colors here.
 
 **Layout**: Desktop-only (1920×1080). Two-panel: sidebar (left, `panel-right` CSS class, `order:1`) + scan area (right, `panel-left` CSS class, `order:2`). CSS `order` is swapped from class names — `panel-right` is visually LEFT. `view` state was removed; do not re-add tab switching.
 
@@ -98,7 +98,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **Print functions are module-level**: `printBubble/printList/printSummary/labelCSS/encodePallet/doPrint` have NO access to `cfg`/React state — pass what they need as params (e.g. the `lbl={del,pn,coo}` object threaded `handlePrint`→`doPrint`→`printBubble/printList`). Vars scoped inside `labelCSS` (e.g. `k`) can't be referenced from the body template strings.
 
-**QR bridge**: `encodePallet` returns compact versioned `PC1|palletId|PN|PO|DEL|COO|q1,q2,…` (pieces/box) for the external TC520L app. Keep it versioned/parseable; QR ink is black so it prints on thermal.
+**QR bridge**: `encodePallet` returns compact versioned `PC1|palletId|PN|PO|DEL|COO|q1,q2,…` (pieces/box) for the external TC520L app; rendered on every label (top-right). Generated via **`qrcode-generator`** (global `qrcode`: `qrcode(0,'M').addData(s).make().createDataURL(3)`) — NOT node-qrcode's `QRCode.toDataURL`, which has no browser build (that nonexistent CDN path was the original latent bug: QR silently never rendered). Keep it versioned/parseable; QR ink is black so it prints on thermal.
+
+**Verification / scanning**: Per-box scanning is QTY-only — the inline VERIFY toggles and the Pallet Identity card were both removed. PN matching is opt-in: Print settings → VERIFICATION → `cfg.pnCheck` reveals a transient **PN CHECK** panel (scan box PN barcodes → ✓ match / ✗ mismatch; state `pnScans`/`pnInput`; no per-box record). Its "use this PN on label" button sets `meta.pn`. The old per-box mismatch `useMemo` (`cfg.po/del/pn/coo`, `meta.pn`) remains but is inert.
 
 **Label-field toggles**: `cfg.lblDel/lblPn/lblCoo` (default true) control whether DEL/PN/COO print on the label (order DEL→PN→COO); PO always prints; independent of the VERIFY scan toggles (`cfg.po/del/pn/coo`).
 
