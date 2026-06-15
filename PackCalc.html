@@ -1098,6 +1098,30 @@ const App = () => {
           <div style={{flex:1,overflowY:'auto',padding:'10px 20px',display:'flex',flexDirection:'column',alignItems:'center'}}>
             <div style={{width:'100%',maxWidth:760}}>
 
+              {/* Pallet identity */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif",marginBottom:8}}>PALLET IDENTITY</div>
+                <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                  <div style={{flex:'1 1 220px',minWidth:170}}>
+                    <label style={{fontSize:9,fontWeight:700,letterSpacing:'.08em',color:C.sec,fontFamily:"'Fira Sans',sans-serif"}}>PART NUMBER · scan box 1</label>
+                    <input value={meta.pn||''}
+                      onChange={e=>updActive(p=>({...p,meta:{...p.meta,pn:e.target.value.toUpperCase()}}))}
+                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur();inputRef.current?.focus();}}}
+                      placeholder="scan PN barcode…"
+                      style={{width:'100%',marginTop:4,padding:'8px 10px',minHeight:38,background:C.s2,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,outline:'none'}}/>
+                  </div>
+                  {[['po','PO'],['ref','DELIVERY'],['coo','COO']].map(([key,label])=>(
+                    <div key={key} style={{flex:'1 1 130px',minWidth:110}}>
+                      <label style={{fontSize:9,fontWeight:700,letterSpacing:'.08em',color:C.sec,fontFamily:"'Fira Sans',sans-serif"}}>{label}</label>
+                      <input value={meta[key]||''}
+                        onChange={e=>updActive(p=>({...p,meta:{...p.meta,[key]:e.target.value.toUpperCase()}}))}
+                        placeholder="type…"
+                        style={{width:'100%',marginTop:4,padding:'8px 10px',minHeight:38,background:C.s2,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,outline:'none'}}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Config row */}
               <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:10}}>
                 <span style={{fontSize:11,color:C.muted,fontWeight:600,letterSpacing:'.05em',fontFamily:"'Fira Sans',sans-serif"}}>VERIFY:</span>
