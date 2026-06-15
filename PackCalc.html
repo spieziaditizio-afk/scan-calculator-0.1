@@ -851,6 +851,7 @@ const App = () => {
       vals.forEach(v=>{ freq[v]=(freq[v]||0)+1; });
       modes[fk] = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
     });
+    if(meta.pn && trackedKeys.includes('pn')) modes.pn = meta.pn.toUpperCase();
 
     boxes.forEach(b=>{
       for(const fk of trackedKeys){
@@ -862,7 +863,7 @@ const App = () => {
     });
 
     return { mismatchIds:ids, mismatchFields:bads, modesMap:modes };
-  },[boxes, cfg]);
+  },[boxes, cfg, meta.pn]);
 
   /* ── Packing list cross-check ── */
   const plCrossCheck = useMemo(()=>{
