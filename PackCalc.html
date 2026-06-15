@@ -752,7 +752,7 @@ const GuideModal = ({ onClose }) => {
    APP — Smart Pallet ScanCount
 ════════════════════════════════════════════ */
 const App = () => {
-  const [cfg,          setCfg]         = useState({ pn:true, coo:true, po:true, del:true, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true });
+  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true });
   const [printerOpen,  setPrinterOpen] = useState(false);
   const [pallets,      setPallets]     = useState(()=>[initPallet()]);
   const [activePltIdx, setActivePltIdx]= useState(0);
@@ -1105,6 +1105,7 @@ const App = () => {
                   const on=cfg[f.key];
                   return(
                     <button key={f.key} className="ftoggle"
+                      title={f.key==='pn'?'Verify PN on every box — flags any box ≠ pallet PN':`Scan ${f.short} on every box`}
                       onClick={()=>setCfg(c=>({...c,[f.key]:!c[f.key]}))}
                       style={{borderColor:on?C.green:C.border,background:on?'rgba(5,150,105,.08)':'transparent',color:on?C.green:C.sec}}>
                       <span style={{width:12,height:12,borderRadius:3,border:`1.5px solid ${on?C.green:C.muted}`,background:on?C.green:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
