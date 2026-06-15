@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZT620 Label — Mockup (SPQ / parciales)</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#cbd5e1;font-family:Arial,Helvetica,sans-serif;color:#0f172a;
+       padding:32px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  h1{font-size:18px;font-weight:800;}
+  .sub{font-size:13px;color:#475569;max-width:720px;text-align:center;line-height:1.5;margin-bottom:8px;}
+  .variant-label{font-size:12px;font-weight:700;color:#334155;letter-spacing:.04em;margin-top:18px;}
+  .dim{font-size:11px;color:#64748b;}
+
+  /* ---- Thermal label: BLACK ON WHITE ONLY (ZT620 ~128 x 63 mm) ---- */
+  .label{
+    width:680px;height:335px;            /* 2.03:1 ≈ 128 x 63 mm */
+    background:#fff;color:#000;
+    border:3px solid #000;border-radius:4px;
+    padding:0;display:flex;flex-direction:column;overflow:hidden;
+    font-family:Arial,Helvetica,sans-serif;
+    box-shadow:0 8px 24px rgba(15,23,42,.25);
+  }
+  .mono{font-family:'JetBrains Mono','Consolas',monospace;font-variant-numeric:tabular-nums;}
+
+  /* header strip — inverted */
+  .lbl-hdr{background:#000;color:#fff;display:flex;align-items:center;justify-content:space-between;
+           padding:7px 14px;}
+  .lbl-hdr .brand{font-size:13px;font-weight:800;letter-spacing:.12em;}
+  .lbl-hdr .meta{font-size:12px;font-weight:700;letter-spacing:.04em;}
+
+  /* identity row */
+  .lbl-id{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px 6px;gap:12px;}
+  .lbl-id .ey{font-size:10px;font-weight:700;letter-spacing:.14em;color:#000;}
+  .lbl-id .pn{font-size:30px;font-weight:900;line-height:1;letter-spacing:.01em;margin-top:2px;}
+  .lbl-id .po{font-size:14px;font-weight:700;margin-top:5px;}
+  .qr{width:84px;height:84px;flex-shrink:0;border:1.5px solid #000;padding:3px;}
+  .qr canvas,.qr img{width:100%!important;height:100%!important;display:block;}
+
+  /* stats strip */
+  .lbl-stats{display:flex;border-top:1.5px solid #000;border-bottom:3px solid #000;}
+  .stat{flex:1;padding:6px 14px;border-right:1.5px solid #000;}
+  .stat:last-child{border-right:none;}
+  .stat .k{font-size:9px;font-weight:700;letter-spacing:.14em;color:#000;}
+  .stat .v{font-size:20px;font-weight:900;line-height:1.1;}
+
+  /* partials — the hero */
+  .lbl-part{flex:1;padding:7px 14px 10px;display:flex;flex-direction:column;}
+  .part-bar{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .part-bar .tag{background:#000;color:#fff;font-size:12px;font-weight:900;letter-spacing:.1em;padding:3px 9px;}
+  .part-bar .hint{font-size:11px;font-weight:700;color:#000;}
+  .part-cells{display:flex;gap:9px;flex:1;align-items:stretch;}
+  .pcell{flex:1;border:2.5px solid #000;border-radius:5px;display:flex;flex-direction:column;
+         align-items:center;justify-content:center;padding:4px;}
+  .pcell .bid{font-size:11px;font-weight:800;letter-spacing:.06em;}
+  .pcell .pq{font-size:38px;font-weight:900;line-height:1;}
+  .pcell .pu{font-size:9px;font-weight:700;letter-spacing:.16em;}
+  .lbl-full{font-size:13px;font-weight:800;margin-top:8px;letter-spacing:.02em;}
+  .lbl-full b{font-weight:900;}
+
+  /* no-QR variant: identity row without qr, bigger partial cells handled by same css */
+</style>
+</head>
+<body>
+  <h1>Etiqueta ZT620 — propuesta (consciente del SPQ)</h1>
+  <p class="sub">
+    Impresión <b>térmica = solo negro sobre blanco</b>. La jerarquía la dan el tamaño, la negrita y los recuadros.
+    Lo que el operador VNA ve primero: <b>cuántas cajas parciales hay y las piezas de cada una</b> (con su nº de caja
+    B## para localizarla). Las cajas completas (=SPQ) son intercambiables, así que solo se resumen.
+  </p>
+
+  <div class="variant-label">A) Recomendada — con QR (puente a la app del TC520L)</div>
+  <div class="dim">ZT620 · 128 × 63 mm</div>
+  <div class="label">
+    <div class="lbl-hdr">
+      <span class="brand">PACKCALC · SEVENUM</span>
+      <span class="meta mono">PLT 1 · 14 JUN 2026</span>
+    </div>
+    <div class="lbl-id">
+      <div>
+        <div class="ey">PART NUMBER</div>
+        <div class="pn mono">MT40A1G8SA-075</div>
+        <div class="po mono">PO VT9A000002125</div>
+      </div>
+      <div class="qr" id="qrA"></div>
+    </div>
+    <div class="lbl-stats">
+      <div class="stat"><div class="k">TOTAL PCS</div><div class="v mono">12 500</div></div>
+      <div class="stat"><div class="k">SPQ</div><div class="v mono">2 000</div></div>
+      <div class="stat"><div class="k">BOXES</div><div class="v mono">8</div></div>
+    </div>
+    <div class="lbl-part">
+      <div class="part-bar">
+        <span class="tag">PARTIAL BOXES · 3</span>
+        <span class="hint">↓ pick these to hit non-SPQ order qty</span>
+      </div>
+      <div class="part-cells">
+        <div class="pcell"><span class="bid mono">B06</span><span class="pq mono">1 500</span><span class="pu">PCS</span></div>
+        <div class="pcell"><span class="bid mono">B07</span><span class="pq mono">750</span><span class="pu">PCS</span></div>
+        <div class="pcell"><span class="bid mono">B08</span><span class="pq mono">250</span><span class="pu">PCS</span></div>
+      </div>
+      <div class="lbl-full">FULL BOXES: <b>5 × 2 000</b> &nbsp;(B01–B05)</div>
+    </div>
+  </div>
+
+  <div class="variant-label">B) Variante sin QR — parciales aún más grandes</div>
+  <div class="dim">ZT620 · 128 × 63 mm</div>
+  <div class="label">
+    <div class="lbl-hdr">
+      <span class="brand">PACKCALC · SEVENUM</span>
+      <span class="meta mono">PLT 1 · 14 JUN 2026</span>
+    </div>
+    <div class="lbl-id">
+      <div>
+        <div class="ey">PART NUMBER</div>
+        <div class="pn mono">MT40A1G8SA-075</div>
+        <div class="po mono">PO VT9A000002125</div>
+      </div>
+      <div style="text-align:right">
+        <div class="ey">TOTAL / SPQ</div>
+        <div class="pn mono" style="font-size:24px;margin-top:4px;">12 500</div>
+        <div class="po mono">SPQ 2 000 · 8 boxes</div>
+      </div>
+    </div>
+    <div class="lbl-part" style="border-top:3px solid #000;padding-top:9px;">
+      <div class="part-bar">
+        <span class="tag">PARTIAL BOXES · 3</span>
+        <span class="hint">↓ pick these to hit non-SPQ order qty</span>
+      </div>
+      <div class="part-cells">
+        <div class="pcell"><span class="bid mono">B06</span><span class="pq mono" style="font-size:44px;">1 500</span><span class="pu">PCS</span></div>
+        <div class="pcell"><span class="bid mono">B07</span><span class="pq mono" style="font-size:44px;">750</span><span class="pu">PCS</span></div>
+        <div class="pcell"><span class="bid mono">B08</span><span class="pq mono" style="font-size:44px;">250</span><span class="pu">PCS</span></div>
+      </div>
+      <div class="lbl-full">FULL BOXES: <b>5 × 2 000</b> &nbsp;(B01–B05)</div>
+    </div>
+  </div>
+
+  <p class="sub" style="margin-top:22px;">
+    El QR de la variante A codifica la lista de cajas — p. ej.
+    <span class="mono" style="font-size:11px;">MT40A1G8SA-075|2000|2000,2000,2000,2000,2000,1500,750,250</span> —
+    para que la app del TC520L lo escanee y tenga todas las parciales sin teclear nada.
+  </p>
+
+<script>
+  var payload = "MT40A1G8SA-075|2000|2000,2000,2000,2000,2000,1500,750,250";
+  if (window.QRCode) {
+    QRCode.toCanvas(payload, { width:84, margin:0, color:{ dark:'#000', light:'#fff' } }, function(err, canvas){
+      if(!err){ document.getElementById('qrA').appendChild(canvas); }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Etiqueta térmica monocromo — mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@700;800;900&display=swap" rel="stylesheet" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#cbd5e1;font-family:Inter,Arial,sans-serif;color:#0f172a;
+       padding:30px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  h1{font-size:18px;font-weight:800;}
+  .sub{font-size:13px;color:#475569;max-width:640px;text-align:center;line-height:1.5;margin-bottom:6px;}
+  .cap{font-size:12px;font-weight:700;color:#334155;margin-top:18px;}
+  .dim{font-size:11px;color:#64748b;margin-bottom:6px;}
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+
+  /* ===== THERMAL LABEL — BLACK ON WHITE ONLY ===== */
+  .label{
+    width:128mm;background:#fff;color:#000;border:2px solid #000;
+    padding:3.5mm 4mm;display:flex;flex-direction:column;gap:2mm;
+    box-shadow:0 8px 24px rgba(15,23,42,.25);
+  }
+  .label.qln{width:113mm;}
+
+  .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #000;padding-bottom:2mm;gap:6px;}
+  .brand{font-size:13px;font-weight:900;letter-spacing:.06em;}
+  .pid{font-size:11px;font-weight:800;color:#000;letter-spacing:.04em;margin-top:1px;}
+  /* RECEIVING tag — outlined (mono) instead of amber fill */
+  .tag{font-size:11px;font-weight:900;letter-spacing:.06em;padding:2px 8px;border:1.5px solid #000;border-radius:3px;white-space:nowrap;}
+
+  .pnrow{display:flex;align-items:baseline;gap:10px;}
+  .pn-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;color:#000;}
+  .pn{font-size:18px;font-weight:900;letter-spacing:.02em;}
+
+  .meta{display:flex;flex-wrap:wrap;gap:14px;border-top:1px solid #000;padding-top:1.5mm;}
+  .mf .lbl{font-size:8px;font-weight:700;letter-spacing:.1em;color:#000;}
+  .mf .val{font-size:12px;font-weight:800;}
+
+  .ppb-lbl{font-size:8px;font-weight:800;letter-spacing:.12em;color:#000;margin-top:1mm;}
+  .bubbles{display:flex;flex-wrap:wrap;gap:2mm;margin-top:1.5mm;}
+  /* bubble — white fill, black border (was amber) */
+  .bub{width:38px;height:46px;border:2px solid #000;border-radius:5px;
+       display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .bub .q{font-size:17px;font-weight:900;line-height:1;}
+  .bub .b{font-size:6.5px;font-weight:800;color:#000;letter-spacing:.04em;margin-top:2px;}
+
+  .totals{display:grid;grid-template-columns:1fr 1fr;gap:2mm;border-top:1px solid #000;padding-top:1.5mm;}
+  /* totals — bordered boxes instead of gray fill */
+  .tot{border:1.5px solid #000;border-radius:3px;padding:1.5mm 3mm;}
+  .tot .k{font-size:8px;font-weight:700;letter-spacing:.1em;color:#000;}
+  .tot .v{font-size:20px;font-weight:900;line-height:1.05;}
+
+  .ftr{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #000;padding-top:1.5mm;}
+  .ft{font-size:8px;color:#000;}
+  /* VERIFIED — solid black box, white text (prints crisp). MISMATCH = same but ⚠ */
+  .ok{padding:2px 9px;border-radius:3px;font-size:9px;font-weight:900;background:#000;color:#fff;letter-spacing:.04em;white-space:nowrap;}
+  .warn{padding:2px 9px;border-radius:3px;font-size:9px;font-weight:900;background:#fff;color:#000;border:2px solid #000;letter-spacing:.04em;white-space:nowrap;}
+</style>
+</head>
+<body>
+  <h1>Tu mismo diseño, en monocromo para térmica</h1>
+  <p class="sub">Negro sobre blanco (lo único que imprime una térmica). Cambios vs. el ámbar actual:
+    burbujas con <b>borde negro</b> y relleno blanco, badge RECEIVING <b>en contorno</b>,
+    totales en <b>cajas con borde</b>, y VERIFIED en <b>caja negra sólida</b> (inconfundible).
+    El número de piezas y el B## se mantienen idénticos.</p>
+
+  <div class="cap">Zebra ZT620</div>
+  <div class="dim">128 × 63 mm</div>
+  <div class="label">
+    <div class="hdr">
+      <div>
+        <div class="brand">PACKCALC · SEVENUM</div>
+        <div class="pid mono">PLT 1</div>
+      </div>
+      <div class="tag">RECEIVING</div>
+    </div>
+    <div class="pnrow">
+      <span class="pn-lbl">PN</span><span class="pn mono">—</span>
+    </div>
+    <div class="ppb-lbl">PIECES PER BOX</div>
+    <div class="bubbles">
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B01</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B02</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B03</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B04</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B05</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B06</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B07</span></div>
+      <div class="bub"><span class="q mono">10</span><span class="b mono">B08</span></div>
+      <div class="bub"><span class="q mono">10</span><span class="b mono">B09</span></div>
+      <div class="bub"><span class="q mono">25</span><span class="b mono">B10</span></div>
+      <div class="bub"><span class="q mono">60</span><span class="b mono">B11</span></div>
+    </div>
+    <div class="totals">
+      <div class="tot"><div class="k">TOTAL BOXES</div><div class="v mono">11</div></div>
+      <div class="tot"><div class="k">TOTAL PIECES</div><div class="v mono">245</div></div>
+    </div>
+    <div class="ftr">
+      <span class="ft mono">SEVENUM · 14 JUN 2026, 22:38 · ZEBRA ZT620</span>
+      <span class="ok">✓ VERIFIED</span>
+    </div>
+  </div>
+
+  <div class="cap">Zebra QLn420 (un poco más angosta)</div>
+  <div class="dim">113 × 63 mm</div>
+  <div class="label qln">
+    <div class="hdr">
+      <div>
+        <div class="brand">PACKCALC · SEVENUM</div>
+        <div class="pid mono">PLT 1</div>
+      </div>
+      <div class="tag">RECEIVING</div>
+    </div>
+    <div class="pnrow"><span class="pn-lbl">PN</span><span class="pn mono">—</span></div>
+    <div class="ppb-lbl">PIECES PER BOX</div>
+    <div class="bubbles">
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B01</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B02</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B03</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B04</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B05</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B06</span></div>
+      <div class="bub"><span class="q mono">20</span><span class="b mono">B07</span></div>
+      <div class="bub"><span class="q mono">10</span><span class="b mono">B08</span></div>
+      <div class="bub"><span class="q mono">10</span><span class="b mono">B09</span></div>
+      <div class="bub"><span class="q mono">25</span><span class="b mono">B10</span></div>
+      <div class="bub"><span class="q mono">60</span><span class="b mono">B11</span></div>
+    </div>
+    <div class="totals">
+      <div class="tot"><div class="k">TOTAL BOXES</div><div class="v mono">11</div></div>
+      <div class="tot"><div class="k">TOTAL PIECES</div><div class="v mono">245</div></div>
+    </div>
+    <div class="ftr">
+      <span class="ft mono">SEVENUM · 14 JUN 2026 · ZEBRA QLn420</span>
+      <span class="ok">✓ VERIFIED</span>
+    </div>
+  </div>
+</body>
+</html>

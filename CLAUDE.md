@@ -68,9 +68,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project: PackCalc
 
-**Architecture**: `PackCalc.html` is the app — standalone React 18 via CDN + Babel standalone. No npm, no build step. All JS, CSS, and JSX in one file. `ReceivingBento.html` is a separate static design mockup (light-WMS bento grid of the receiving form) — not part of the app.
+**Architecture**: `PackCalc.html` is the app — standalone React 18 via CDN + Babel standalone. No npm, no build step. All JS, CSS, and JSX in one file. `ReceivingBento.html` is a separate static design mockup (light-WMS bento grid) — not part of the app; same for `ZT620LabelMockup.html` / `ThermalBubbleMockup.html` (label previews). Specs & plans live in `docs/superpowers/`.
 
 **Verify**: Open in a browser. No automated tests or build step exists.
+
+**Domain / scope**: PackCalc = receiving station (count boxes → print pallet label + QR on Zebra ZT620). Picking, optimal box combination, and label re-printing are a SEPARATE app on a Zebra TC520L handheld (+ QLn420 mobile printer) — NOT PackCalc. SPQ-aware partial-box marking is a parked future feature.
 
 **Component pattern**: Defined at module level as `const X = ({props}) => {...}`. Color object `const C = {...}` now maps each key to a CSS var (`bg:'var(--bg)'`, etc.), so the CSS `--var` tokens in `:root` are the single source of truth. To change colors, edit `:root` (light) / `:root[data-theme="dark"]` (dark) only — NOT `C`.
 
