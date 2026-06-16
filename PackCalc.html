@@ -65,8 +65,6 @@
     .box-chip:active{transform:scale(.95);}
     .box-chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
 
-    /* Step chips */
-    .step-chip{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px;padding:7px 9px;border-radius:8px;border:1.5px solid;}
 
     /* Buttons */
     .new-btn{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sec);cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.04em;min-height:38px;}
@@ -1064,9 +1062,8 @@ const App = () => {
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
-          <button className="new-btn" onClick={()=>setPrinterOpen(true)} title="Advanced settings">
+          <button className="new-btn" onClick={()=>setPrinterOpen(true)} title="Advanced settings" style={{justifyContent:'center'}}>
             <Svg name="gear" size={13} color="#cbd5e1"/>
-            <span style={{fontSize:10,letterSpacing:'.06em'}}>{cfg.printer==='zt'?'ZT':'A4'}</span>
           </button>
           <button className="new-btn" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} title="Toggle dark mode" aria-label="Toggle dark mode">
             <Svg name={theme==='dark'?'sun':'moon'} size={13} color="#cbd5e1"/>
@@ -1157,21 +1154,6 @@ const App = () => {
                   </div>
                 );
               })()}
-
-              {/* Step chips */}
-              <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:8,flexWrap:'wrap'}}>
-                {steps.map((f,i)=>{
-                  const captured=draft[f.key]!==undefined, active=i===stepIdx;
-                  return(
-                    <div key={f.key} className="step-chip" style={{background:active?C.s3:C.surface,borderColor:active?C.amber:captured?C.green:C.border}}>
-                      <span style={{fontSize:8,fontWeight:700,letterSpacing:'.08em',fontFamily:"'Fira Sans',sans-serif",color:active?C.amber:captured?C.green:C.muted}}>{f.short}</span>
-                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:800,color:captured?C.text:C.muted}}>
-                        {captured?(draft[f.key]||'—'):(active?'…':'—')}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
 
               {/* Prompt */}
               <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'.07em',marginBottom:5,display:'flex',alignItems:'center',gap:6,justifyContent:'center',fontFamily:"'Fira Sans',sans-serif"}}>
