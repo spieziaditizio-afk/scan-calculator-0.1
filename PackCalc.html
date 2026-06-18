@@ -178,35 +178,33 @@ const bubbleFontSize = (qty, baseFn, cardW) => {
 };
 const bubbleSize = (count, isA4) => {
   if (isA4) {
-    if (count <= 6)  return { w:60, h:76, fn:24, fs:9  };
-    if (count <= 12) return { w:48, h:60, fn:20, fs:8  };
-    if (count <= 20) return { w:38, h:48, fn:16, fs:7  };
-    return                  { w:30, h:38, fn:13, fs:6  };
+    if (count <= 6)  return { w:70, h:88, fn:28, fs:10 };
+    if (count <= 12) return { w:56, h:70, fn:23, fs:9  };
+    if (count <= 20) return { w:44, h:56, fn:19, fs:8  };
+    return                  { w:35, h:44, fn:15, fs:7  };
   }
-  if (count <= 4)  return { w:58, h:68, fn:24, fs:8  };
-  if (count <= 10) return { w:46, h:56, fn:20, fs:8  };
-  if (count <= 20) return { w:36, h:44, fn:16, fs:7  };
-  if (count <= 35) return { w:28, h:34, fn:13, fs:6  };
-  return                  { w:22, h:28, fn:11, fs:6  };
+  if (count <= 4)  return { w:66, h:78, fn:27, fs:9  };
+  if (count <= 10) return { w:54, h:64, fn:23, fs:9  };
+  if (count <= 20) return { w:42, h:52, fn:19, fs:8  };
+  if (count <= 35) return { w:32, h:40, fn:15, fs:7  };
+  return                  { w:26, h:32, fn:13, fs:6  };
 };
 
 /* ── Shared label CSS ── */
 const labelCSS = (labelW, isA4=false) => {
   const p = isA4
-    ? { gap:'8px', pad:'16px 20px', hdrPb:'8px', brand:11, pid:11, tag:'3px 9px', tagSz:11, pn:32, pnMix:16, metaGap:'20px', metaPt:'6px', mflbl:9, mfval:15, totGap:'8px', totPt:'6px', totPad:'6px 14px', totLbl:9, totVal:24, ftrPt:'6px', ft:9.5, ok:10, okPad:'3px 10px' }
-    : { gap:'5px', pad:'9px 12px',  hdrPb:'5px', brand:9,  pid:8.5,tag:'2px 7px', tagSz:9,  pn:22, pnMix:13, metaGap:'12px', metaPt:'4px', mflbl:7, mfval:11, totGap:'4px', totPt:'4px', totPad:'3px 7px',  totLbl:7, totVal:16, ftrPt:'4px', ft:7.5, ok:8,  okPad:'2px 7px' };
+    ? { gap:'8px', pad:'16px 20px', hdrPb:'8px', pid:11, pn:32, pnMix:16, metaGap:'20px', metaPt:'6px', mflbl:9, mfval:15, totGap:'8px', totPt:'6px', totPad:'6px 14px', totLbl:9, totVal:24, ftrPt:'6px', ft:9.5, ok:10, okPad:'3px 10px' }
+    : { gap:'5px', pad:'9px 12px',  hdrPb:'5px', pid:8.5,pn:22, pnMix:13, metaGap:'12px', metaPt:'4px', mflbl:7, mfval:11, totGap:'4px', totPt:'4px', totPad:'3px 7px',  totLbl:7, totVal:16, ftrPt:'4px', ft:7.5, ok:8,  okPad:'2px 7px' };
   const k = isA4
-    ? { sub:'#888', subAlt:'#555', pnMixFg:'#aaa', ftFg:'#999', line:'#ddd', tagBg:'#fffbe6', tagFg:'#92600a', tagBd:'1px solid #f0c040', totBg:'#f7f7f7', totBd:'none', okBg:'#14532d', okFg:'#22c55e', warnBg:'#7c1c1c', warnFg:'#f87171', warnBd:'none' }
-    : { sub:'#000', subAlt:'#000', pnMixFg:'#000', ftFg:'#000', line:'#000', tagBg:'#fff', tagFg:'#000', tagBd:'1.5px solid #000', totBg:'#fff', totBd:'1.5px solid #000', okBg:'#000', okFg:'#fff', warnBg:'#fff', warnFg:'#000', warnBd:'2px solid #000' };
+    ? { sub:'#888', subAlt:'#555', pnMixFg:'#aaa', ftFg:'#999', line:'#ddd', totBg:'#f7f7f7', totBd:'none', okBg:'#14532d', okFg:'#22c55e', warnBg:'#7c1c1c', warnFg:'#f87171', warnBd:'none' }
+    : { sub:'#000', subAlt:'#000', pnMixFg:'#000', ftFg:'#000', line:'#000', totBg:'#fff', totBd:'1.5px solid #000', okBg:'#000', okFg:'#fff', warnBg:'#fff', warnFg:'#000', warnBd:'2px solid #000' };
   return `
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:#f0f0f0;display:flex;flex-direction:column;align-items:center;justify-content:${isA4?'flex-start':'center'};min-height:100vh;font-family:'Inter',sans-serif;gap:14px;padding:${isA4?'30px 20px':'20px'};}
   .label{width:${labelW};background:#fff;border:1.5px solid #111;padding:${p.pad};display:flex;flex-direction:column;gap:${p.gap};}
   .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:${p.hdrPb};gap:6px;}
   .hdr-left{flex:1;min-width:0;}
-  .brand{font-size:${p.brand}px;font-weight:900;letter-spacing:.06em;white-space:nowrap;}
   .pid{font-family:'JetBrains Mono',monospace;font-size:${p.pid}px;font-weight:800;color:${k.subAlt};letter-spacing:.04em;}
-  .tag{font-family:'JetBrains Mono',monospace;font-size:${p.tagSz}px;font-weight:900;padding:${p.tag};border-radius:3px;background:${k.tagBg};color:${k.tagFg};border:${k.tagBd};white-space:nowrap;flex-shrink:0;}
   .pn{font-family:'JetBrains Mono',monospace;font-size:${p.pn}px;font-weight:900;color:#111;letter-spacing:.02em;}
   .pn-mixed{font-family:'JetBrains Mono',monospace;font-size:${p.pnMix}px;font-weight:700;color:${k.pnMixFg};}
   .meta{display:flex;flex-wrap:wrap;gap:${p.metaGap};border-top:1px solid ${k.line};padding-top:${p.metaPt};}
@@ -243,14 +241,14 @@ const genQR = (data) => {
 };
 
 /* ── PRINT: LIST layout ── */
-const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true}) => {
+const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true,qr:false}) => {
   const pr = PRINTERS[printerId] || PRINTERS.zt;
   const isA4 = pr.type === 'paper';
   const { meta, boxes } = pallet;
   const n = boxes.length;
   const totalPcs = boxes.reduce((s,b)=>s+b.qty,0);
   const showCols = boxes.some(b=>b.pn)||boxes.some(b=>b.coo);
-  const qrUrl    = await genQR(encodePallet(pallet));
+  const qrUrl    = lbl.qr ? await genQR(encodePallet(pallet)) : null;
   const qrSz     = isA4 ? 64 : 46;
 
   const colCount = isA4
@@ -291,11 +289,9 @@ const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,c
   <div class="label">
     <div class="hdr">
       <div class="hdr-left">
-        <div class="brand">PACKCALC · SEVENUM</div>
         <div class="pid">${pallet.id}</div>
       </div>
       ${qrUrl?`<img src="${qrUrl}" width="${qrSz}" height="${qrSz}" style="image-rendering:pixelated;flex-shrink:0;"/>`:''}
-      <div class="tag">RECEIVING</div>
     </div>
     ${lbl.pn?(meta.pn?`<div class="pn">${meta.pn}</div>`:`<div class="pn-mixed">— mixed / no PN —</div>`):''}
     <div class="meta">
@@ -322,12 +318,12 @@ const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,c
 };
 
 /* ── PRINT: BUBBLES layout ── */
-const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true}) => {
+const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true,qr:false}) => {
   const pr = PRINTERS[printerId] || PRINTERS.zt;
   const isA4 = pr.type === 'paper';
   const { meta, boxes } = pallet;
   const totalPcs = boxes.reduce((s,b)=>s+b.qty,0);
-  const qrUrl    = await genQR(encodePallet(pallet));
+  const qrUrl    = lbl.qr ? await genQR(encodePallet(pallet)) : null;
   const sz       = bubbleSize(boxes.length, isA4);
   const qrSz     = isA4 ? 64 : 46;
   const bubBd    = isA4 ? '1.5px solid #ffb700' : '2px solid #000';
@@ -352,11 +348,9 @@ const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true
   <div class="label">
     <div class="hdr">
       <div class="hdr-left">
-        <div class="brand">PACKCALC · SEVENUM</div>
         <div class="pid">${pallet.id}</div>
       </div>
       ${qrUrl?`<img src="${qrUrl}" width="${qrSz}" height="${qrSz}" style="image-rendering:pixelated;flex-shrink:0;"/>`:''}
-      <div class="tag">RECEIVING</div>
     </div>
     <div style="padding-top:${isA4?8:6}px;">
       <div style="font-size:${isA4?9:7}px;font-weight:700;letter-spacing:.1em;color:#888;margin-bottom:${isA4?6:5}px;">PIECES PER BOX</div>
@@ -443,7 +437,6 @@ const printSummary = (pallets, packingList, grandBoxes, grandPcs, delivStatus) =
     body{background:#f0f0f0;font-family:'Inter',sans-serif;padding:30px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;}
     .doc{width:190mm;background:#fff;border:1.5px solid #111;padding:20px 22px;display:flex;flex-direction:column;gap:12px;}
     .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:10px;}
-    .brand{font-size:10px;font-weight:900;letter-spacing:.06em;color:#444;}
     .doc-title{font-size:22px;font-weight:900;letter-spacing:.03em;color:#111;margin-top:3px;}
     .doc-date{font-size:9px;color:#888;font-weight:700;margin-top:2px;letter-spacing:.04em;}
     .hdr-stat{text-align:right;}
@@ -487,7 +480,6 @@ const printSummary = (pallets, packingList, grandBoxes, grandPcs, delivStatus) =
   <div class="doc">
     <div class="hdr">
       <div>
-        <div class="brand">PACKCALC · SEVENUM</div>
         <div class="doc-title">RECEIVING SUMMARY</div>
         <div class="doc-date">${dt}</div>
       </div>
@@ -747,7 +739,7 @@ const GuideModal = ({ onClose }) => {
    APP — Smart Pallet ScanCount
 ════════════════════════════════════════════ */
 const App = () => {
-  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false });
+  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false });
   const [printerOpen,  setPrinterOpen] = useState(false);
   const [pallets,      setPallets]     = useState(()=>[initPallet()]);
   const [activePltIdx, setActivePltIdx]= useState(0);
@@ -981,7 +973,7 @@ const App = () => {
     const effPo  = meta.po  ||(distinctPo.length===1?distinctPo[0]:'');
     const effRef = meta.ref ||(distinctDel.length===1?distinctDel[0]:'');
     const pallet = {id:palletName,receivedAt:dateStr(),meta:{pn:effPn,coo:effCoo,po:effPo,ref:effRef,worker:packingList.worker||meta.worker||''},boxes};
-    await doPrint(pallet,cfg.printer,cfg.layout,mismatchIds.size>0,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo});
+    await doPrint(pallet,cfg.printer,cfg.layout,mismatchIds.size>0,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel});
   };
 
   const handlePrintPallet = async (p, i) => {
@@ -994,7 +986,7 @@ const App = () => {
       ref: p.meta.ref ||(dp('del').length===1?dp('del')[0]:''),
       worker: packingList.worker||p.meta.worker||'',
     }};
-    await doPrint(ep,cfg.printer,cfg.layout,false,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo});
+    await doPrint(ep,cfg.printer,cfg.layout,false,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel});
   };
 
   const saveSession = () => {
@@ -1533,6 +1525,14 @@ const App = () => {
                   </button>
                 );
               })}
+            </div>
+            <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
+              <div style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif",marginBottom:8}}>PRINT</div>
+              <label style={{display:'flex',alignItems:'center',gap:10,padding:'7px 2px',cursor:'pointer'}}>
+                <input type="checkbox" checked={cfg.qrOnLabel} onChange={e=>setCfg(c=>({...c,qrOnLabel:e.target.checked}))}
+                  style={{width:16,height:16,accentColor:C.amber,cursor:'pointer',flexShrink:0}}/>
+                <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Fira Sans',sans-serif"}}>Include QR on label (for TC520L scanning app)</span>
+              </label>
             </div>
             <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
               <div style={{fontSize:10,fontWeight:800,color:C.muted,letterSpacing:'.1em',fontFamily:"'Fira Sans',sans-serif",marginBottom:8}}>VERIFICATION</div>
