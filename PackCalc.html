@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PackCalc — Pallet Scan Counter</title>
+  <title>ScanCalc — Pallet Scan Counter</title>
   <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('packcalc_theme')||'light');}catch(e){}</script>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -1040,15 +1040,12 @@ const App = () => {
       {/* Header */}
       <header className="app-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px',height:50,background:'linear-gradient(135deg,#1e293b,#334155)',borderBottom:'none',flexShrink:0,gap:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
-          <div style={{width:30,height:30,borderRadius:8,background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="#fff" aria-hidden="true">
-              <polygon points="1,8 8,1 15,8 8,8"/>
-              <polygon points="8,8 15,8 8,15" opacity=".6"/>
-            </svg>
+          <div style={{width:30,height:30,borderRadius:8,background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:16,lineHeight:1}} aria-hidden="true">
+            📦
           </div>
           <div style={{minWidth:0}}>
             <div style={{fontSize:13,fontWeight:800,color:'#fff',lineHeight:1.2,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.03em',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-              PackCalc
+              ScanCalc
             </div>
             <div style={{fontSize:9,color:'#cbd5e1',letterSpacing:'.07em',fontFamily:"'Fira Sans',sans-serif"}}>PALLET SCAN COUNTER · SEVENUM</div>
           </div>
@@ -1448,7 +1445,7 @@ const App = () => {
                         color:p.boxes.length?C.text:C.muted,
                         fontSize:11,fontWeight:700,fontFamily:"'Fira Sans',sans-serif",letterSpacing:'.05em',
                         flexShrink:0,whiteSpace:'nowrap'}}>
-                      <Svg name="print" size={14} color={p.boxes.length?C.amber:C.muted}/>
+                      <span style={{fontSize:14,lineHeight:1,opacity:p.boxes.length?1:.5}} aria-hidden="true">🏷️</span>
                     </button>
                   </div>
                 );
