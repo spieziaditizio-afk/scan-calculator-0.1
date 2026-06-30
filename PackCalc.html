@@ -370,6 +370,9 @@ const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true
   w.document.close();
 };
 
+const sortBoxesForLabel = (boxes, sortByQty) =>
+  sortByQty ? [...boxes].sort((a,b)=>b.qty-a.qty) : boxes;
+
 const doPrint = (pallet, printerId, layout, hasMismatch, lbl) =>
   layout === 'bubble'
     ? printBubble(pallet, printerId, hasMismatch, lbl)
@@ -972,14 +975,14 @@ const App = () => {
     const effCoo = meta.coo ||(distinctCoo.length===1?distinctCoo[0]:'');
     const effPo  = meta.po  ||(distinctPo.length===1?distinctPo[0]:'');
     const effRef = meta.ref ||(distinctDel.length===1?distinctDel[0]:'');
-    const pallet = {id:palletName,receivedAt:dateStr(),meta:{pn:effPn,coo:effCoo,po:effPo,ref:effRef,worker:packingList.worker||meta.worker||''},boxes};
+    const pallet = {id:palletName,receivedAt:dateStr(),meta:{pn:effPn,coo:effCoo,po:effPo,ref:effRef,worker:packingList.worker||meta.worker||''},boxes:sortBoxesForLabel(boxes,cfg.sortLabelByQty)};
     await doPrint(pallet,cfg.printer,cfg.layout,mismatchIds.size>0,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel});
   };
 
   const handlePrintPallet = async (p, i) => {
     const bs=p.boxes;
     const dp=k=>[...new Set(bs.filter(b=>b[k]).map(b=>b[k]))];
-    const ep={...p,id:`PLT ${i+1}`,meta:{
+    const ep={...p,id:`PLT ${i+1}`,boxes:sortBoxesForLabel(bs,cfg.sortLabelByQty),meta:{
       pn:  p.meta.pn  ||(dp('pn').length===1?dp('pn')[0]:''),
       coo: p.meta.coo ||(dp('coo').length===1?dp('coo')[0]:''),
       po:  p.meta.po  ||(dp('po').length===1?dp('po')[0]:''),
