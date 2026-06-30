@@ -739,7 +739,7 @@ const GuideModal = ({ onClose }) => {
    APP — Smart Pallet ScanCount
 ════════════════════════════════════════════ */
 const App = () => {
-  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false });
+  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false, sortLabelByQty:false });
   const [printerOpen,  setPrinterOpen] = useState(false);
   const [pallets,      setPallets]     = useState(()=>[initPallet()]);
   const [activePltIdx, setActivePltIdx]= useState(0);
@@ -1529,6 +1529,11 @@ const App = () => {
                 <input type="checkbox" checked={cfg.qrOnLabel} onChange={e=>setCfg(c=>({...c,qrOnLabel:e.target.checked}))}
                   style={{width:16,height:16,accentColor:C.amber,cursor:'pointer',flexShrink:0}}/>
                 <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Fira Sans',sans-serif"}}>Include QR on label (for TC520L scanning app)</span>
+              </label>
+              <label style={{display:'flex',alignItems:'center',gap:10,padding:'7px 2px',cursor:'pointer'}}>
+                <input type="checkbox" checked={cfg.sortLabelByQty} onChange={e=>setCfg(c=>({...c,sortLabelByQty:e.target.checked}))}
+                  style={{width:16,height:16,accentColor:C.amber,cursor:'pointer',flexShrink:0}}/>
+                <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Fira Sans',sans-serif"}}>Sort boxes by quantity (highest first) on label</span>
               </label>
             </div>
             <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
