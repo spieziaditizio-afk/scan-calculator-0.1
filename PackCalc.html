@@ -241,7 +241,7 @@ const genQR = (data) => {
 };
 
 /* ── PRINT: LIST layout ── */
-const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true,qr:false}) => {
+const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true,qr:false,totals:true}) => {
   const pr = PRINTERS[printerId] || PRINTERS.zt;
   const isA4 = pr.type === 'paper';
   const { meta, boxes } = pallet;
@@ -303,10 +303,10 @@ const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,c
       <div class="boxes-title">BOX BREAKDOWN — PIECES PER BOX</div>
       <div class="boxes-cols">${boxRows}</div>
     </div>
-    <div class="totals">
+    ${lbl.totals!==false?`<div class="totals">
       <div class="tot-block"><div class="tot-lbl">TOTAL BOXES</div><div class="tot-val">${boxes.length}</div></div>
       <div class="tot-block"><div class="tot-lbl">TOTAL PIECES</div><div class="tot-val">${totalPcs}</div></div>
-    </div>
+    </div>`:''}
     <div class="ftr">
       <span class="ft">SEVENUM · ${dateStr()} · ${pr.name}</span>
       ${statusBadge}
@@ -318,7 +318,7 @@ const printList = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,c
 };
 
 /* ── PRINT: BUBBLES layout ── */
-const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true,qr:false}) => {
+const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true,coo:true,qr:false,totals:true}) => {
   const pr = PRINTERS[printerId] || PRINTERS.zt;
   const isA4 = pr.type === 'paper';
   const { meta, boxes } = pallet;
@@ -356,10 +356,10 @@ const printBubble = async (pallet, printerId, hasMismatch, lbl={del:true,pn:true
       <div style="font-size:${isA4?9:7}px;font-weight:700;letter-spacing:.1em;color:#888;margin-bottom:${isA4?6:5}px;">PIECES PER BOX</div>
       <div style="display:flex;flex-wrap:wrap;gap:${isA4?6:4}px;">${bubbles}</div>
     </div>
-    <div class="totals">
+    ${lbl.totals!==false?`<div class="totals">
       <div class="tot-block"><div class="tot-lbl">TOTAL BOXES</div><div class="tot-val">${boxes.length}</div></div>
       <div class="tot-block"><div class="tot-lbl">TOTAL PIECES</div><div class="tot-val">${totalPcs}</div></div>
-    </div>
+    </div>`:''}
     <div class="ftr">
       <span class="ft">SEVENUM · ${dateStr()} · ${pr.name}</span>
       ${statusBadge}
@@ -742,7 +742,7 @@ const GuideModal = ({ onClose }) => {
    APP — Smart Pallet ScanCount
 ════════════════════════════════════════════ */
 const App = () => {
-  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false, sortLabelByQty:true });
+  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false, sortLabelByQty:true, lblTotals:true });
   const [printerOpen,  setPrinterOpen] = useState(false);
   const [pallets,      setPallets]     = useState(()=>[initPallet()]);
   const [activePltIdx, setActivePltIdx]= useState(0);
@@ -976,7 +976,7 @@ const App = () => {
     const effPo  = meta.po  ||(distinctPo.length===1?distinctPo[0]:'');
     const effRef = meta.ref ||(distinctDel.length===1?distinctDel[0]:'');
     const pallet = {id:palletName,receivedAt:dateStr(),meta:{pn:effPn,coo:effCoo,po:effPo,ref:effRef,worker:packingList.worker||meta.worker||''},boxes:sortBoxesForLabel(boxes,cfg.sortLabelByQty)};
-    await doPrint(pallet,cfg.printer,cfg.layout,mismatchIds.size>0,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel});
+    await doPrint(pallet,cfg.printer,cfg.layout,mismatchIds.size>0,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel,totals:cfg.lblTotals});
   };
 
   const handlePrintPallet = async (p, i) => {
@@ -989,7 +989,7 @@ const App = () => {
       ref: p.meta.ref ||(dp('del').length===1?dp('del')[0]:''),
       worker: packingList.worker||p.meta.worker||'',
     }};
-    await doPrint(ep,cfg.printer,cfg.layout,false,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel});
+    await doPrint(ep,cfg.printer,cfg.layout,false,{del:cfg.lblDel,pn:cfg.lblPn,coo:cfg.lblCoo,qr:cfg.qrOnLabel,totals:cfg.lblTotals});
   };
 
   const saveSession = () => {
@@ -1537,6 +1537,11 @@ const App = () => {
                 <input type="checkbox" checked={cfg.sortLabelByQty} onChange={e=>setCfg(c=>({...c,sortLabelByQty:e.target.checked}))}
                   style={{width:16,height:16,accentColor:C.amber,cursor:'pointer',flexShrink:0}}/>
                 <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Fira Sans',sans-serif"}}>Sort boxes by quantity (highest first) on label</span>
+              </label>
+              <label style={{display:'flex',alignItems:'center',gap:10,padding:'7px 2px',cursor:'pointer'}}>
+                <input type="checkbox" checked={cfg.lblTotals} onChange={e=>setCfg(c=>({...c,lblTotals:e.target.checked}))}
+                  style={{width:16,height:16,accentColor:C.amber,cursor:'pointer',flexShrink:0}}/>
+                <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Fira Sans',sans-serif"}}>Show total boxes &amp; pieces on label</span>
               </label>
             </div>
             <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
