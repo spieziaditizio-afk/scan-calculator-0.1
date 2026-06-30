@@ -742,7 +742,7 @@ const GuideModal = ({ onClose }) => {
    APP — Smart Pallet ScanCount
 ════════════════════════════════════════════ */
 const App = () => {
-  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false, sortLabelByQty:false });
+  const [cfg,          setCfg]         = useState({ pn:false, coo:false, po:false, del:false, printer:'a4', layout:'bubble', lblDel:true, lblPn:true, lblCoo:true, pnCheck:false, qrOnLabel:false, sortLabelByQty:true });
   const [printerOpen,  setPrinterOpen] = useState(false);
   const [pallets,      setPallets]     = useState(()=>[initPallet()]);
   const [activePltIdx, setActivePltIdx]= useState(0);
@@ -1122,7 +1122,7 @@ const App = () => {
                     </div>
                     <input value={pnInput}
                       onChange={e=>setPnInput(e.target.value)}
-                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();const v=e.target.value.trim().toUpperCase();if(v)setPnScans(s=>[...s,v]);setPnInput('');}}}
+                      onKeyDown={e=>{if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();const v=e.target.value.trim().toUpperCase();if(v)setPnScans(s=>[...s,v]);setPnInput('');}}}
                       placeholder="scan each box's PN barcode…"
                       style={{width:'100%',padding:'9px 12px',minHeight:40,background:C.s2,border:`1px solid ${C.border}`,borderRadius:6,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700,outline:'none'}}/>
                     <div style={{marginTop:10,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
